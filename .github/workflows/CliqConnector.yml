@@ -70,7 +70,7 @@ jobs:
   connecting_cliq:
     runs-on: ubuntu-latest
     steps:
-      - uses: Integrations-dev/GitHub-Informer-New@v1
+      - uses: Lincy-Zoho/GitHub-Informer-New@v1
         with:
           channel-endpoint: ${{ secrets.ENDPOINT }}
           #branch-protection-rule-message: 'Security Update :Security:\n (event) (rule) is (action) by (me) at (repo) under (ref)'
