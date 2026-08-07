@@ -1,26 +1,34 @@
-# RepositoryTemplate 📔
-This is the Template Repository in which the GitHub Action can perform well on cloning.
+# GitHub Informer for Zoho Cliq
+The GitHub Action is used to integrate GitHub and Zoho Cliq, by notifying about the GitHub Events performed, to the Zoho Cliq Channels.
 
-Users can efficiently utilise the GitHub Informer by cloning the Repository using the commands. 
+GitHub Informer requires the following inputs to integrate the **GitHub Actions** with your **Cliq** channels
+- Cliq Webhook Token
+- Cliq Channel API Endpoint or Unique Name
+- Individual messages for each of the GitHub events (in the name of **event**-message)
+- A default message that you want to send if the message is not specified for that event.
+  
+## GitHub Secret for Channel Endpoint 🔗
+You must add GitHub Secret, which contains the channel endpoint in the format 
 
 ```
-git clone https://<GITHUB PERSONAL ACCESS TOKEN>@github.com/Integrations-dev/RepositoryTemplate
+<Cliq Channel Endpoint>?zapikey=<Cliq Webhook Token>
 ```
 
-## Generating Personal Access Token 🗝️
-The **Personal Access Token** can be created either
-  - from the **Tokens Section** of **Settings** at https://github.com/settings/tokens
-  - or Click **Profile :arrow_right: Settings :arrow_right: Developer Settings :arrow_right: Personal Access Tokens :arrow_right: Tokens (classic)**
+You must create a GitHub Secret for providing the Channel Endpoint  by
+  - Go to the Repository where the CliqInformer will be added and go to the '**Settings**' tab.
+  - Select '**Secrets and variables**' and click on '**Actions**' in the dropdown.
+  - Click on '**New repository secret**' and enter the name of your secret and also enter the Cliq channel endpoint  as the Secret (in above mentioned format)
 
-and Click on Generate new Token and select the Expiration Period and Select the Scope Required.
+and use the secret as the '**channel-endpoint**' input in the job of your workflow.
 
-Since we will be pushing the code to the Repository, A Scope 🛡️ of **public_repo** is required for public repositories and **repo** is required for all (private and public) repositories.
-
-Once cloned , you are all ready to utilise the GitHub Informer GitHub Aciton.
+```yaml
+  steps:
+    - uses: Integrations-dev/GitHub-Informer@v1
+      with:
+        channel-endpoint: ${{ secrets.SECRET_NAME }}
+```
 
 ## Custom Event Messages ⚙️
-
-We have added a few custom messages you can try by removing the comment, which is as simple as removing the **hash (#)**. 
 
 Suppose you need a notification in Cliq for only selected events or actions,
   - you may change the '**_on_**' key of the YAML File where the Action is called.
@@ -70,18 +78,25 @@ We also provide several shortcuts to obtain the variables that you want to inser
   - **(release)**: which will be replaced by the release that is being worked on
   - **(status)**: which will be replaced by the Status of the Event (if the Event is Deployment Status or Status)
 
-## GitHub Secret for Channel Endpoint 🔗
-You must add GitHub Secrets, which contains the channel endpoint in the format 
+Example:
 
-ENDPOINT
-```
-<Cliq Channel Endpoint>?zapikey=<Cliq Webhook Token>
-```
+A GitHub Action is triggered by (me) at (repo).
 
-You must create a GitHub Secret for providing the Channel Endpoint  by
-  - Go to the Repository where the GitHub Informer will be added and go to the '**Settings**' tab.
-  - Select '**Secrets and variables**' and click on '**Actions**' in the dropdown.
-  - Click on '**New repository secret**' and enter the name as '**ENDPOINT**' and also enter the Cliq channel endpoint  as the Secret (in above mentioned format)
+will change to 
+
+A GitHub Action is triggered by [user_name](https://www.github.com/user_name) at [user_name/repository_name](https://www.github.com/user_name/repository_name).
+
+Upon successfully providing the inputs as per criteria, the message will be successfully sent to the Cliq Channel.
+
+The GitHub events that trigger a workflow are listed below, among which all events are supported by GitHub Informer
+
+|    branch_protection_rule    |          check_run          |          check_suite         |            create            |           delete            |
+|            :----:            |           :----:            |            :----:            |            :----:            |           :----:            |
+| **deployment**               | **deployment_status**       | **discussion**               | **discussion_comment**       | **fork**                    |
+| **gollum**                   | **issue_comment**           | **issues**                   | **label**                    | **milestone**               |
+| **page_build**               | **public**                  | **pull_request**             | **pull_request_comment**     | **pull_request_review**     |
+|**pull_request_review_comment**| **pull_request_target**    | **push**                     | **registry_package**         | **release**                 |
+| **repository_dispatch**     | **schedule**                 | **status**                   | **watch**                    | **workflow_dispatch**       |
 
 ## Base YAML Code 🗒
 
@@ -89,7 +104,6 @@ Don't worry about remembering a lot of stuff. Here is the minimal code that's re
 
 ```yaml
 name : Communicating with Cliq
-
 on:
   #you may add the events you like to get notified
   push:
@@ -105,4 +119,90 @@ jobs:
 
 That's all! You will start getting notified for each event occurring in GitHub through the GitHub Action.
 
-Go to the Actions tab of the Repository to view the Message status.
+Go to the Actions tab of the repository to view the message status.
+
+## AI Review Gate (OpenAI, Claude, Gemini)
+
+You can enable an AI review gate for pull requests. The action can run against OpenAI, Claude, or Gemini.
+
+- If the AI decision is pass, the check passes and no PR comment is added.
+- If the AI decision is fail (or the AI call fails), the check fails, a PR comment is added, and a failure message is posted to the Cliq PR thread.
+
+### Required GitHub Workflow Permissions
+
+Your workflow must include:
+
+```yaml
+permissions:
+  contents: read
+  checks: write
+  issues: write
+  pull-requests: write
+```
+
+### Recommended Workflow Usage
+
+```yaml
+name: PR AI Review Gate
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled]
+
+permissions:
+  contents: read
+  checks: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Integrations-dev/GitHub-Informer@v1
+        with:
+          channel-endpoint: ${{ secrets.CLIQ_ENDPOINT }}
+          ai-review-enabled: true
+          ai-review-trigger: auto
+          ai-review-on-sync: true
+          ai-review-label: ai-review
+          ai-review-check-name: AI Review Gate
+          ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}
+          ai-review-api-url: https://api.openai.com/v1/chat/completions
+          ai-review-model: gpt-4.1-mini
+```
+
+### Provider Configuration
+
+Only the token should be stored as a secret. Endpoint and model can be plain workflow values.
+
+OpenAI
+
+```yaml
+ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}   # token starts with sk-
+ai-review-api-url: https://api.openai.com/v1/chat/completions
+ai-review-model: gpt-4.1-mini
+```
+
+Claude
+
+```yaml
+ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}   # token starts with sk-ant-
+ai-review-api-url: https://api.anthropic.com/v1/messages
+ai-review-model: claude-3-5-sonnet-latest
+```
+
+Gemini
+
+```yaml
+ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}   # token starts with AIza
+ai-review-api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent
+ai-review-model: gemini-1.5-pro
+```
+
+### Branch Protection
+
+To enforce mentor approval policy, add the check name from ai-review-check-name (default: AI Review Gate) as a required status check in branch protection.
+
+Here is a Template Repository for the GitHub Informer which you can use as a baseline to work with and customize to your usage.
+https://www.github.com/Integrations-dev/RepositoryTemplate
