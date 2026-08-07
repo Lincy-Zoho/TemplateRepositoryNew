@@ -37,8 +37,8 @@ on:
   public:
     # No Types
   pull_request:
-    # It works only for opened , synchronize and reopened if not specified
-    types: [ assigned , unassigned , labeled , unlabeled , opened , closed , edited , reopened , synchronize , converted_to_draft , ready_for_review , locked , unlocked , review_requested , review_request_removed , auto_merge_enabled , auto_merge_disabled ]
+    # Keep only actions that produce AI Review Gate in auto mode.
+    types: [ opened , reopened , synchronize ]
   pull_request_target:
     # It works only for opened , synchronize and reopened if not specified
     types: [ assigned , unassigned , labeled , unlabeled , opened , closed , edited , reopened , synchronize , converted_to_draft , ready_for_review , locked , unlocked , review_requested , review_request_removed , auto_merge_enabled , auto_merge_disabled ]
@@ -65,12 +65,21 @@ on:
     # types : [started]
   workflow_dispatch:
     # No Types
+
+permissions:
+  contents: read
+  checks: write
+  issues: write
+  pull-requests: write
   
 jobs:
   connecting_cliq:
     runs-on: ubuntu-latest
     steps:
-      - uses: Lincy-Zoho/GitHub-Informer-New@v1
+      - if: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' }}
+        uses: Lincy-Zoho/GitHub-Informer-New@v1.8
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         with:
           channel-endpoint: ${{ secrets.ENDPOINT }}
           #branch-protection-rule-message: 'Security Update :Security:\n (event) (rule) is (action) by (me) at (repo) under (ref)'
@@ -109,3 +118,24 @@ jobs:
           #ie. if a push occurs the push-message will be sent. In case it is not provided. The default-message will be sent. 
           #set-message-if-none: true
           #false makes GitHub-Informer not send the default messages if custom message is not set
+
+      - if: ${{ github.event_name == 'pull_request' }}
+        uses: Lincy-Zoho/GitHub-Informer-New@v1.8
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PULL_REQUEST_DIFF_URL: ${{ github.event.pull_request.diff_url }}
+          PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          channel-endpoint: ${{ secrets.ENDPOINT }}
+          ai-review-enabled: true
+          ai-review-trigger: auto
+          ai-review-on-sync: true
+          ai-review-check-name: AI Review Gate
+          ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}
+          # Diff URL from the PR event, used to fetch the latest patch reliably.
+          # This should be read by the action from the event environment.
+          # Optional overrides per provider:
+          # OpenAI  -> ai-review-api-url: https://api.openai.com/v1/chat/completions
+          # Claude  -> ai-review-api-url: https://api.anthropic.com/v1/messages
+          # Gemini  -> ai-review-api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent
