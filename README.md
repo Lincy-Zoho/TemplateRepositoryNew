@@ -3,18 +3,120 @@ The GitHub Action is used to integrate GitHub and Zoho Cliq, by notifying about 
 
 GitHub Informer requires the following inputs to integrate the **GitHub Actions** with your **Cliq** channels
 - Cliq Webhook Token
-- Cliq Channel API Endpoint or Unique Name
+- Cliq Channel API Endpoint
 - Individual messages for each of the GitHub events (in the name of **event**-message)
 - A default message that you want to send if the message is not specified for that event.
+
+Two posting modes are supported:
+
+1. Webhook mode
+  - **channel-endpoint**: `<Cliq Channel Endpoint>?zapikey=<Cliq Webhook Token>`
+
+2. Bot-auth mode
+  - **channel-endpoint**: `https://cliq.zoho.com/api/v2/channelsbyname/<CHANNEL_UNIQUE_NAME>/message?bot_unique_name=<BOT_UNIQUE_NAME>`
+  - **channel-auth-token**: Cliq OAuth bearer token
+  - the **bot must already be created** by the user and **added to the target channel**
+
+### Where to set bot or user notification mode
+
+Set this in your workflow file: `.github/workflows/CliqConnector.yml`.
+
+You can provide these values in **either** of these two ways:
+
+1. **GitHub Variables** (recommended)
+2. **Directly in the workflow YAML**
+
+Use the job-level `env` keys:
+
+```yaml
+env:
+  CLIQ_NOTIFICATION_MODE: ${{ vars.CLIQ_NOTIFICATION_MODE || 'bot' }}
+  CLIQ_BOT_UNIQUE_NAME: ${{ vars.CLIQ_BOT_UNIQUE_NAME || 'githubnotification' }}
+```
+
+- Set `CLIQ_NOTIFICATION_MODE` to `user` for normal webhook/user mode.
+- Set `CLIQ_NOTIFICATION_MODE` to `bot` for bot notification mode.
+- **`CLIQ_BOT_UNIQUE_NAME` is required when mode is `bot`.**
+
+Option 1: GitHub Variables (recommended)
+
+1. In GitHub repository settings, go to `Secrets and variables` -> `Actions` -> `Variables`.
+2. Create **`CLIQ_NOTIFICATION_MODE`** with value **`user`** or **`bot`**.
+3. If mode is `bot`, create **`CLIQ_BOT_UNIQUE_NAME`** with your actual bot unique name.
+
+Option 2: Directly in `CliqConnector.yml`
+
+```yaml
+env:
+  CLIQ_NOTIFICATION_MODE: bot
+  CLIQ_BOT_UNIQUE_NAME: githubnotification
+```
+
+Use this if you want fixed values in the workflow file itself.
+
+### Bot mode setup
+
+If you want **bot notification mode**, configure:
+
+1. **Create the bot in Zoho Cliq**.
+2. **Get the bot unique name** from the bot configuration/details page.
+  - Open **Integrations** -> **Bots**.
+  - Select your bot.
+  - In the bot details panel, check the **API Endpoint**.
+  - The value after `/bots/` in the endpoint is the **bot unique name**.
+  - Example: if the API endpoint is `https://cliq.zoho.com/api/v2/bots/githubnotification/message`, then the bot unique name is **`githubnotification`**.
+3. **Add the bot to the target Cliq channel** where notifications should be posted.
+4. In GitHub repository settings, go to `Secrets and variables` -> `Actions` -> `Variables`.
+5. Create **`CLIQ_NOTIFICATION_MODE=bot`**.
+6. Create **`CLIQ_BOT_UNIQUE_NAME=<your bot unique name>`**.
+
+In bot mode:
+
+- The workflow reuses the existing **`ENDPOINT`** secret.
+- The workflow appends **`bot_unique_name`** automatically.
+- If **`CLIQ_BOT_UNIQUE_NAME`** is missing, workflow fails fast.
+
+### User mode setup
+
+If you want normal user/webhook notification mode, configure:
+
+1. `CLIQ_NOTIFICATION_MODE=user`
+
+In user mode:
+
+- **`CLIQ_BOT_UNIQUE_NAME` is not required.**
+- Workflow will use the webhook endpoint as-is.
+- **You do not need to reconfigure endpoint in this section**; keep using the existing **`ENDPOINT`** secret configured under **GitHub Secret for Channel Endpoint**.
+
+## Available Regions
+
+Use the same base domain as your Zoho Cliq organization region when configuring the channel endpoint.
+
+Common region domains:
+
+- US: `https://cliq.zoho.com`
+- IN: `https://cliq.zoho.in`
+- EU: `https://cliq.zoho.eu`
+- AU: `https://cliq.zoho.com.au`
+- JP: `https://cliq.zoho.jp`
+
+Endpoint pattern:
+
+- `<region-base>/api/v2/channelsbyname/<CHANNEL_UNIQUE_NAME>/message?zapikey=<WEBHOOK_TOKEN>`
+
+Examples:
+
+- `https://cliq.zoho.com/api/v2/channelsbyname/GitHubupdates/message?zapikey=1001.xxxxx`
+- `https://cliq.zoho.in/api/v2/channelsbyname/GitHubupdates/message?zapikey=1001.xxxxx`
   
 ## GitHub Secret for Channel Endpoint 🔗
-You must add GitHub Secret, which contains the channel endpoint in the format 
+You must add **GitHub Secret** which contains the channel endpoint in the format 
 
 ```
 <Cliq Channel Endpoint>?zapikey=<Cliq Webhook Token>
 ```
 
-You must create a GitHub Secret for providing the Channel Endpoint  by
+You must create a **GitHub Secret** for providing the **Channel Endpoint** by
   - Go to the Repository where the CliqInformer will be added and go to the '**Settings**' tab.
   - Select '**Secrets and variables**' and click on '**Actions**' in the dropdown.
   - Click on '**New repository secret**' and enter the name of your secret and also enter the Cliq channel endpoint  as the Secret (in above mentioned format)
@@ -27,6 +129,41 @@ and use the secret as the '**channel-endpoint**' input in the job of your workfl
       with:
         channel-endpoint: ${{ secrets.SECRET_NAME }}
 ```
+
+## Store Cliq Thread ID in GitHub Project
+
+For PR events, you can store and reuse the Cliq thread ID in a GitHub Project V2 custom text field (recommended).
+
+Create GitHub classic token for `PROJECT_TOKEN`:
+
+1. Open https://github.com/settings/tokens
+2. Click Generate new token (classic)
+3. Select scopes:
+  - **`repo`**
+  - **`project`**
+4. Copy the token and save it as repository secret **`PROJECT_TOKEN`**
+
+Required configuration:
+
+- Secret: **`PROJECT_TOKEN`**
+  - Use a classic PAT with **`repo`** and **`project`** scopes.
+- Env: **`CLIQ_THREAD_STORAGE_MODE=project`**
+- Env: **`GITHUB_PROJECT_OWNER=<owner login>`**
+- Env: **`GITHUB_PROJECT_NUMBER=<project number>`**
+- Env: **`GITHUB_PROJECT_THREAD_FIELD_ID=<field identifier>`**
+  - Can be either:
+    - numeric field identifier from the Project field settings URL, or
+    - GraphQL field node id (`PVTF_*`).
+
+Behavior:
+
+1. Action resolves the PR item in the configured Project V2.
+2. Action reads existing thread ID from the configured custom field.
+3. If not found, action posts a new Cliq message and captures `message_id`.
+4. Action writes captured thread ID to the same project field.
+5. Later PR events reuse that saved value and continue in the same Cliq thread.
+
+If project mode is enabled and project field update fails, action logs the failure. Ensure **`PROJECT_TOKEN`**, **project owner/number**, and **field identifier** are correct.
 
 ## Custom Event Messages ⚙️
 
@@ -202,7 +339,29 @@ ai-review-model: gemini-1.5-pro
 
 ### Branch Protection
 
-To enforce mentor approval policy, add the check name from ai-review-check-name (default: AI Review Gate) as a required status check in branch protection.
+To enforce mentor approval policy, add the check name from **`ai-review-check-name`** (default: **`AI Review Gate`**) as a **required status check** in branch protection.
+
+### Configure Required Status Check (Step-by-step)
+
+1. In workflow, set the check name you want:
+
+```yaml
+ai-review-check-name: AI Review Gate
+```
+
+2. Run the workflow once on a PR so GitHub can see this check context.
+
+3. In GitHub repository settings, open `Rules` (or `Branches` -> branch protection rule).
+
+4. Enable `Require status checks to pass`.
+
+5. Add the same check name exactly (example: `AI Review Gate`) under required checks.
+
+Important:
+
+- **If you rename `ai-review-check-name`, update the required check name in rules to the same value.**
+- **Name matching is exact.** Any mismatch causes **`Waiting for status to be reported`**.
+- After changing rules/check name, **push a new commit or re-run checks once** so the new context is picked.
 
 Here is a Template Repository for the GitHub Informer which you can use as a baseline to work with and customize to your usage.
 https://www.github.com/Integrations-dev/RepositoryTemplate
