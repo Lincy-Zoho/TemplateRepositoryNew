@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zoho Cliq GitHub Informer Usage Summary</title>
+  <style>
+    :root {
+      --bg: #f4f7f2;
+      --panel: #ffffff;
+      --ink: #163126;
+      --muted: #5d7367;
+      --line: #d8e3db;
+      --accent: #1f8f5f;
+      --accent-2: #dff5ea;
+      --code: #0f241c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(180deg, #eef6f0 0%, var(--bg) 100%);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #173a2c 0%, #206a49 100%);
+      color: #fff;
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 18px 40px rgba(20, 45, 33, 0.18);
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+
+    .hero p {
+      margin: 8px 0 0;
+      max-width: 820px;
+      color: rgba(255,255,255,0.88);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+      margin-top: 22px;
+    }
+
+    .card, .section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 10px 24px rgba(21, 49, 36, 0.06);
+    }
+
+    .card {
+      padding: 20px;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 1.35rem;
+    }
+
+    h3 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
+    }
+
+    .section {
+      margin-top: 20px;
+      padding: 22px;
+    }
+
+    ul, ol {
+      margin: 10px 0 0 20px;
+      padding: 0;
+    }
+
+    li + li {
+      margin-top: 6px;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      background: #eef5f0;
+      color: var(--code);
+      padding: 0.15rem 0.35rem;
+      border-radius: 6px;
+      font-size: 0.94em;
+    }
+
+    pre {
+      margin: 12px 0 0;
+      padding: 14px;
+      background: #10231b;
+      color: #ebfff4;
+      border-radius: 14px;
+      overflow: auto;
+      font-size: 0.92rem;
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 700;
+      background: #f8fbf9;
+    }
+
+    .pill {
+      display: inline-block;
+      margin: 4px 8px 0 0;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: var(--accent-2);
+      color: var(--accent);
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .note {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--accent);
+      background: #f4fbf7;
+      border-radius: 10px;
+      color: var(--muted);
+    }
+
+    .footer {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Zoho Cliq GitHub Informer</h1>
+      <p>This document summarizes how the two repositories work together: one repository provides the reusable GitHub Action implementation, and the other provides the ready-to-use workflow template that consuming repositories can copy and configure.</p>
+      <div style="margin-top:16px;">
+        <span class="pill">Action Repo: GitHub-Informer-New</span>
+        <span class="pill">Template Repo: TemplateRepositoryNew</span>
+        <span class="pill">Features: Cliq notifications + Project thread reuse + AI review gate</span>
+      </div>
+    </section>
+
+    <div class="grid">
+      <article class="card">
+        <div class="eyebrow">Repository 1</div>
+        <h2>GitHub-Informer-New</h2>
+        <p>This is the reusable <strong>public GitHub Action</strong>. It contains the Java implementation that:</p>
+        <ul>
+          <li>posts GitHub event notifications to Zoho Cliq,</li>
+          <li>supports <strong>user mode</strong> and <strong>bot mode</strong>,</li>
+          <li>stores and reuses <strong>Cliq thread IDs</strong> in GitHub Project V2,</li>
+          <li>runs the <strong>AI Review Gate</strong> and publishes a check run.</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="eyebrow">Repository 2</div>
+        <h2>TemplateRepositoryNew</h2>
+        <p>This is the <strong>workflow template repo</strong>. It contains the ready-made <code>.github/workflows/CliqConnector.yml</code> file that consuming repositories can use directly.</p>
+        <ul>
+          <li>wires secrets and variables into the action,</li>
+          <li>handles PR project pre-insert logic,</li>
+          <li>configures AI review inputs,</li>
+          <li>builds the final Cliq endpoint for user or bot mode.</li>
+        </ul>
+      </article>
+    </div>
+
+    <section class="section">
+      <div class="eyebrow">Recommended Model</div>
+      <h2>How Both Repositories Are Used</h2>
+      <ol>
+        <li>Publish and version the action from <strong>GitHub-Informer-New</strong> using a tag such as <code>v3</code>.</li>
+        <li>Keep the workflow template in <strong>TemplateRepositoryNew</strong>.</li>
+        <li>In a consuming repository, copy <code>CliqConnector.yml</code> or use it as the reference workflow.</li>
+        <li>Configure repository <strong>Secrets</strong> and <strong>Variables</strong>.</li>
+        <li>The workflow calls <code>Lincy-Zoho/GitHub-Informer-New@v3</code>.</li>
+      </ol>
+      <div class="note">
+        Best practice: users should not copy action source files locally. They only need the workflow file in their repo, while the action logic stays in the public action repo.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">Setup</div>
+      <h2>Required Secrets and Variables</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>ENDPOINT</code></td>
+            <td>Secret</td>
+            <td>Cliq channel endpoint with <code>?zapikey=...</code></td>
+          </tr>
+          <tr>
+            <td><code>PROJECT_TOKEN</code></td>
+            <td>Secret</td>
+            <td>Classic GitHub PAT for Project V2 operations. Required scopes: <code>repo</code>, <code>project</code>, and optionally <code>read:org</code> for org-owned projects.</td>
+          </tr>
+          <tr>
+            <td><code>AI_REVIEW_TOKEN</code></td>
+            <td>Secret</td>
+            <td>Token for OpenAI, Claude, or Gemini if AI review is enabled.</td>
+          </tr>
+          <tr>
+            <td><code>CLIQ_NOTIFICATION_MODE</code></td>
+            <td>Variable or YAML value</td>
+            <td><code>user</code> or <code>bot</code></td>
+          </tr>
+          <tr>
+            <td><code>CLIQ_BOT_UNIQUE_NAME</code></td>
+            <td>Variable or YAML value</td>
+            <td>Required only for bot mode.</td>
+          </tr>
+          <tr>
+            <td><code>CLIQ_PROJECT_NUMBER</code></td>
+            <td>Variable</td>
+            <td>GitHub Project V2 number.</td>
+          </tr>
+          <tr>
+            <td><code>CLIQ_THREAD_FIELD_ID</code></td>
+            <td>Variable</td>
+            <td>Project field identifier or GraphQL field node id used to store the Cliq thread id.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">Notification Modes</div>
+      <h2>User Mode vs Bot Mode</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Mode</th>
+            <th>What User Sets</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>User mode</strong></td>
+            <td><code>CLIQ_NOTIFICATION_MODE=user</code></td>
+            <td>Uses the existing <code>ENDPOINT</code> secret as-is. No bot unique name is required.</td>
+          </tr>
+          <tr>
+            <td><strong>Bot mode</strong></td>
+            <td><code>CLIQ_NOTIFICATION_MODE=bot</code><br><code>CLIQ_BOT_UNIQUE_NAME=&lt;bot-name&gt;</code></td>
+            <td>The workflow reuses <code>ENDPOINT</code> and appends <code>bot_unique_name</code> automatically.</td>
+          </tr>
+        </tbody>
+      </table>
+      <h3 style="margin-top:16px;">Two Supported Ways to Provide Mode Values</h3>
+      <ol>
+        <li><strong>GitHub Variables</strong> in repository settings.</li>
+        <li><strong>Direct values in <code>CliqConnector.yml</code></strong>.</li>
+      </ol>
+      <pre><code>env:
+  CLIQ_NOTIFICATION_MODE: ${{ vars.CLIQ_NOTIFICATION_MODE || 'user' }}
+  CLIQ_BOT_UNIQUE_NAME: ${{ vars.CLIQ_BOT_UNIQUE_NAME || '' }}</code></pre>
+      <div class="note">
+        Recommended approach: use GitHub Variables for <code>CLIQ_NOTIFICATION_MODE</code> and <code>CLIQ_BOT_UNIQUE_NAME</code>, because users can change them without editing the workflow file.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">Bot Setup</div>
+      <h2>How to Configure Bot Mode in Zoho Cliq</h2>
+      <ol>
+        <li>Create the bot in Zoho Cliq.</li>
+        <li>Open <strong>Integrations</strong> -> <strong>Bots</strong>.</li>
+        <li>Select the bot you created.</li>
+        <li>In the bot details panel, check the <strong>API Endpoint</strong>.</li>
+        <li>The value after <code>/bots/</code> is the <strong>bot unique name</strong>.</li>
+        <li>Add the bot to the target Cliq channel.</li>
+      </ol>
+      <pre><code>Example API endpoint:
+https://cliq.zoho.com/api/v2/bots/githubnotification/message
+
+Bot unique name:
+githubnotification</code></pre>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">Project Reuse</div>
+      <h2>How Cliq Thread Reuse Works</h2>
+      <ol>
+        <li>The action resolves the PR item in GitHub Project V2.</li>
+        <li>It reads the existing value from the configured custom field.</li>
+        <li>If no thread id exists, it posts a new Cliq message.</li>
+        <li>It extracts the returned <code>message_id</code>.</li>
+        <li>It saves that id in the Project V2 custom field.</li>
+        <li>Later PR events reuse the same thread.</li>
+      </ol>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">AI Review</div>
+      <h2>AI Review Gate Flow</h2>
+      <ol>
+        <li>The workflow runs AI review on <code>pull_request_target</code>.</li>
+        <li>The action fetches PR diff, sends it to the configured AI provider, and parses the result.</li>
+        <li>It creates a GitHub check run using <code>ai-review-check-name</code>.</li>
+        <li>If the AI result is <strong>PASS</strong>, merge can proceed.</li>
+        <li>If the AI result is <strong>FAIL</strong>, the PR gets a comment and the Cliq PR thread receives the failure report.</li>
+      </ol>
+      <h3 style="margin-top:16px;">Required Status Check Setup</h3>
+      <ol>
+        <li>Set the workflow input <code>ai-review-check-name</code> to the desired check name.</li>
+        <li>Run the workflow once on a PR.</li>
+        <li>In GitHub Rules or Branch Protection, enable <strong>Require status checks to pass</strong>.</li>
+        <li>Add the exact same check name as a required check.</li>
+      </ol>
+      <div class="note">
+        Exact name matching matters. If the required check name and the workflow check name differ, GitHub shows <strong>Waiting for status to be reported</strong>.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">Workflow Shape</div>
+      <h2>High-Level Execution Flow</h2>
+      <ol>
+        <li>Resolve mode and prepare Cliq endpoint.</li>
+        <li>Validate Project V2 token.</li>
+        <li>Ensure the PR exists in the GitHub Project.</li>
+        <li>Post the notification to Cliq.</li>
+        <li>Save or reuse the PR thread id.</li>
+        <li>Run AI Review Gate and publish the status check.</li>
+      </ol>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">Public Repo Usage</div>
+      <h2>Recommended Public Sharing Pattern</h2>
+      <ul>
+        <li><strong>GitHub-Informer-New</strong> stays public as the reusable action repo.</li>
+        <li><strong>TemplateRepositoryNew</strong> stays public as the reference workflow repo.</li>
+        <li>Consuming repositories keep only their workflow file and private secrets/variables.</li>
+      </ul>
+    </section>
+
+    <p class="footer">Prepared from the current local state of the repositories <strong>TemplateRepositoryNew</strong> and <strong>GitHub-Informer-New</strong> on 2026-08-12.</p>
+  </div>
+</body>
+</html>
