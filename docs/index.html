@@ -218,8 +218,27 @@
     </section>
 
     <section class="section">
+      <div class="eyebrow">Setup Flow</div>
+      <h2>Quick Overview: Steps To Go Live</h2>
+      <ol>
+        <li>Add the workflow file (copy <code>CliqConnector.yml</code>) to <code>.github/workflows/</code> in the consuming repository. No separate branch needs to be created for this.</li>
+        <li>Set the four configuration <strong>Variables</strong> (<code>CLIQ_NOTIFICATION_MODE</code>, <code>CLIQ_BOT_UNIQUE_NAME</code>, <code>CLIQ_PROJECT_NUMBER</code>, <code>CLIQ_THREAD_FIELD_ID</code>) under <code>Settings → Secrets and variables → Actions → Variables</code>, only if you need bot mode or project thread reuse — all are optional with safe defaults.</li>
+        <li>Create a protected <strong>Environment</strong> (e.g. <code>cliq-production</code>) and add <code>ENDPOINT</code>, <code>PROJECT_TOKEN</code>, and (if AI review is enabled) <code>AI_REVIEW_TOKEN</code> as <strong>Environment secrets</strong>. The AI provider endpoint and model are plain workflow inputs, not secrets.</li>
+        <li>Run the workflow once on a real pull request so GitHub registers the <code>ai-review-check-name</code> check context.</li>
+        <li>Add that exact check name as a required status check in Branch Protection or Rules.</li>
+        <li>Push a new commit (or re-run) so the newly required check is enforced going forward.</li>
+      </ol>
+      <div class="note">
+        <code>GITHUB_TOKEN</code> is provided automatically by GitHub Actions for every run — it is never configured manually as a secret.
+      </div>
+    </section>
+
+    <section class="section">
       <div class="eyebrow">Setup</div>
       <h2>Required Secrets and Variables</h2>
+      <div class="note">
+        <code>ENDPOINT</code>, <code>PROJECT_TOKEN</code>, and <code>AI_REVIEW_TOKEN</code> should be stored as <strong>Environment secrets</strong> inside a protected environment (e.g. <code>cliq-production</code>) so only Admins/required reviewers can view or edit them — not as plain repository secrets. See the main README's "Add Secrets via a Protected Environment" section for full setup steps.
+      </div>
       <table>
         <thead>
           <tr>
@@ -231,17 +250,17 @@
         <tbody>
           <tr>
             <td><code>ENDPOINT</code></td>
-            <td>Secret</td>
+            <td>Environment secret</td>
             <td>Cliq channel endpoint with <code>?zapikey=...</code></td>
           </tr>
           <tr>
             <td><code>PROJECT_TOKEN</code></td>
-            <td>Secret</td>
+            <td>Environment secret</td>
             <td>Classic GitHub PAT for Project V2 operations. Required scopes: <code>repo</code>, <code>project</code>, and optionally <code>read:org</code> for org-owned projects.</td>
           </tr>
           <tr>
             <td><code>AI_REVIEW_TOKEN</code></td>
-            <td>Secret</td>
+            <td>Environment secret</td>
             <td>Token for OpenAI, Claude, or Gemini if AI review is enabled.</td>
           </tr>
           <tr>
@@ -257,15 +276,18 @@
           <tr>
             <td><code>CLIQ_PROJECT_NUMBER</code></td>
             <td>Variable</td>
-            <td>GitHub Project V2 number.</td>
+            <td>GitHub Project V2 number. Maps internally to <code>GITHUB_PROJECT_NUMBER</code> in the workflow env.</td>
           </tr>
           <tr>
             <td><code>CLIQ_THREAD_FIELD_ID</code></td>
             <td>Variable</td>
-            <td>Project field identifier or GraphQL field node id used to store the Cliq thread id.</td>
+            <td>Project field identifier or GraphQL field node id used to store the Cliq thread id. Maps internally to <code>GITHUB_PROJECT_THREAD_FIELD_ID</code> in the workflow env.</td>
           </tr>
         </tbody>
       </table>
+      <div class="note">
+        Note: the four names above (<code>CLIQ_NOTIFICATION_MODE</code>, <code>CLIQ_BOT_UNIQUE_NAME</code>, <code>CLIQ_PROJECT_NUMBER</code>, <code>CLIQ_THREAD_FIELD_ID</code>) are the <strong>GitHub Actions Variable</strong> names you set once under <code>Settings → Secrets and variables → Actions → Variables</code>. The workflow reads them via <code>vars.*</code> and passes them into the action under slightly different internal env names (shown above) — you never need to edit <code>CliqConnector.yml</code> to set these.
+      </div>
     </section>
 
     <section class="section">
@@ -348,10 +370,11 @@ githubnotification</code></pre>
       </ol>
       <h3 style="margin-top:16px;">Required Status Check Setup</h3>
       <ol>
-        <li>Set the workflow input <code>ai-review-check-name</code> to the desired check name.</li>
-        <li>Run the workflow once on a PR.</li>
+        <li>Set the workflow input <code>ai-review-check-name</code> to the desired check name (defaults to <code>AI Review Gate</code> if not set).</li>
+        <li>Run the workflow once on a PR so GitHub registers the check context.</li>
         <li>In GitHub Rules or Branch Protection, enable <strong>Require status checks to pass</strong>.</li>
         <li>Add the exact same check name as a required check.</li>
+        <li>Push a new commit or re-run the workflow so the newly required check is picked up.</li>
       </ol>
       <div class="note">
         Exact name matching matters. If the required check name and the workflow check name differ, GitHub shows <strong>Waiting for status to be reported</strong>.
