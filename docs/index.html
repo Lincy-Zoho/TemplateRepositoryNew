@@ -360,6 +360,52 @@ githubnotification</code></pre>
 
     <section class="section">
       <div class="eyebrow">AI Review</div>
+      <h2>Enabling the AI Service Model</h2>
+      <p>AI review is <strong>off by default</strong>. To turn it on, set the <code>ai-review-enabled</code> workflow input to <code>true</code> and configure a provider, token, and model. The provider (OpenAI, Claude, or Gemini) is not a separate setting &mdash; it is chosen via the <code>ai-review-api-url</code>/<code>ai-review-model</code> you pick together with the matching token.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Input</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>ai-review-enabled</code></td>
+            <td>Set to <code>true</code> to turn on the AI review gate for pull requests.</td>
+          </tr>
+          <tr>
+            <td><code>ai-review-token</code></td>
+            <td>AI provider token, backed by a repository/environment secret, e.g. <code>${{ secrets.AI_REVIEW_TOKEN }}</code>.</td>
+          </tr>
+          <tr>
+            <td><code>ai-review-api-url</code></td>
+            <td>Endpoint for the chosen provider (OpenAI, Claude, or Gemini).</td>
+          </tr>
+          <tr>
+            <td><code>ai-review-model</code></td>
+            <td>Model name to use, e.g. <code>gpt-4.1-mini</code>, <code>claude-3-5-sonnet-latest</code>, or <code>gemini-1.5-pro</code>. Falls back to a per-service default if omitted.</td>
+          </tr>
+        </tbody>
+      </table>
+      <pre><code>with:
+  ai-review-enabled: true
+  ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}
+  ai-review-api-url: https://api.openai.com/v1/chat/completions
+  ai-review-model: gpt-4.1-mini</code></pre>
+      <h3 style="margin-top:16px;">Optional: Enable via Config File Instead</h3>
+      <p>If you'd rather toggle AI review from a plain file than from workflow inputs, set <code>ai-review-config-file</code> to a path in your repo and add an <code>ai_review:</code> block:</p>
+      <pre><code>ai_review:
+  enabled: true
+  service: openai   # openai | claude | gemini
+  model: gpt-4.1-mini   # optional</code></pre>
+      <div class="note">
+        When the config file and its <code>ai_review</code> block are found, <code>enabled</code> and <code>service</code> from the file take precedence over the <code>ai-review-enabled</code> workflow input and automatic provider detection. The AI token is still never read from this file &mdash; it always comes from the <code>ai-review-token</code> input.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">AI Review</div>
       <h2>AI Review Gate Flow</h2>
       <ol>
         <li>The workflow runs AI review on <code>pull_request_target</code>.</li>
