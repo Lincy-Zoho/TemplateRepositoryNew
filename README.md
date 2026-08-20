@@ -1,96 +1,106 @@
-# GitHub Informer for Zoho Cliq
-The GitHub Action is used to integrate GitHub and Zoho Cliq, by notifying about the GitHub Events performed, to the Zoho Cliq Channels.
+# Cliq Connector Template
 
-GitHub Informer requires the following inputs to integrate the **GitHub Actions** with your **Cliq** channels
-- Cliq Webhook Token
-- Cliq Channel API Endpoint
-- Individual messages for each of the GitHub events (in the name of **event**-message)
-- A default message that you want to send if the message is not specified for that event.
+This repository contains a ready-to-use GitHub Actions workflow for:
 
-Two posting modes are supported:
+- posting GitHub events to Zoho Cliq,
+- running AI PR review checks,
+- storing/reusing Cliq PR thread IDs with GitHub Project V2.
+
+The canonical workflow is [TemplateRepositoryNew/.github/workflows/CliqConnector.yml](TemplateRepositoryNew/.github/workflows/CliqConnector.yml).
+
+## 1. Create GitHub Token (PROJECT_TOKEN)
+
+Use a Personal Access Token (classic) from the account that owns or can edit the Project V2.
+
+1. Open <https://github.com/settings/tokens>
+2. Create a classic PAT.
+3. Enable scopes:
+   - `repo` (required)
+   - `project` (required)
+   - `read:org` (only if your project owner is an organization)
+
+Why this token is needed:
+
+- Project V2 GraphQL read/write (find project, add PR item, update field value).
+
+## 2. Add Secrets via a Protected Environment (Admin-Only)
+
+`ENDPOINT`, `PROJECT_TOKEN`, and `AI_REVIEW_TOKEN` are sensitive (webhook/bot
+auth, GitHub PAT, AI provider key). Store them as **Environment secrets**
+inside a protected GitHub Environment instead of plain repository secrets, so
+only repo/org Admins (or people you explicitly add as required reviewers) can
+view the secret list or change values.
+
+Note: this is different from GitHub Actions **Variables** (`vars.*`).
+Variables are plain text, visible to anyone with read access to the repo, and
+are never masked in logs. Never put a token in `vars.*`. Both repository
+secrets and environment secrets are masked identically in logs (GitHub
+replaces the exact value with `***` wherever it appears in step output) — the
+difference is access control, not masking:
+
+| Storage | Masked in logs | Who can view the value | Who can create/edit |
+|---|---|---|---|
+| Repository secret | Yes | Nobody (write-only) | Anyone with repo Write access |
+| **Environment secret** | Yes | Nobody (write-only) | Only Admins / configured required reviewers |
+| Variable (`vars.*`) | No | Anyone with read access | Anyone with repo Write access |
+
+### 2.1 Create the environment
+
+1. Go to `Settings` -> `Environments` -> `New environment`.
+2. Name it `cliq-production` (must match `environment:` in
+   [CliqConnector.yml](.github/workflows/CliqConnector.yml); rename both together
+   if you use a different name).
+3. Under **Deployment protection rules**:
+   - Add **Required reviewers** and list only Admins/maintainers who should be
+     able to approve workflow runs that use these secrets.
+   - Optionally restrict **Deployment branches and tags** to `main` (or your
+     protected branch) so PRs from forks/other branches cannot access the
+     environment's secrets.
+4. Confirm repository settings so only users with the **Admin** role can
+   create/edit Environments (`Settings` -> `Actions` -> `General`, and
+   branch/role permissions as needed) — this is what prevents non-admin
+   collaborators from modifying the secret values, since Environment secrets
+   can only be managed from within the Environment's own settings page.
+
+### 2.2 Add the environment secrets
+
+Inside `Settings` -> `Environments` -> `cliq-production` -> `Environment secrets`,
+add:
+
+- `ENDPOINT`
+  - Value format: `<Cliq Channel Endpoint>?zapikey=<Cliq Webhook Token>`
+- `PROJECT_TOKEN`
+  - Value: classic PAT from Step 1
+- `AI_REVIEW_TOKEN`
+  - Value: provider token (OpenAI/Claude/Gemini), only if AI review is enabled
+
+No workflow syntax changes are needed beyond the job-level `environment:` key
+already present in `CliqConnector.yml` — `${{ secrets.ENDPOINT }}`,
+`${{ secrets.PROJECT_TOKEN }}`, and `${{ secrets.AI_REVIEW_TOKEN }}` continue
+to resolve exactly as before, just sourced from the environment instead of the
+repository.
+
+If a required reviewer gate is enabled, runs against `pull_request_target`
+will pause with **"Waiting for approval"** until an admin approves — this is
+expected and is the access-control boundary your org wanted.
+
+Cliq auth modes:
 
 1. Webhook mode
-  - **channel-endpoint**: `<Cliq Channel Endpoint>?zapikey=<Cliq Webhook Token>`
+   - `ENDPOINT=<Cliq Channel Endpoint>?zapikey=<Cliq Webhook Token>`
+   - `CLIQ_AUTH_TOKEN` not required
 
 2. Bot-auth mode
-  - **channel-endpoint**: `https://cliq.zoho.com/api/v2/channelsbyname/<CHANNEL_UNIQUE_NAME>/message?bot_unique_name=<BOT_UNIQUE_NAME>`
-  - **channel-auth-token**: Cliq OAuth bearer token
-  - the **bot must already be created** by the user and **added to the target channel**
+   - user must create the bot in Cliq
+   - user must add the bot to the target channel
+  - `ENDPOINT=<Cliq Channel Endpoint>?zapikey=<Cliq Webhook Token>`
+  - workflow appends `bot_unique_name` query parameter from `CLIQ_BOT_UNIQUE_NAME`
 
-### Where to set bot or user notification mode
+In bot-auth mode, the message is posted using bot authentication. In webhook mode, the message can still display a bot block, but authentication is via webhook.
 
-Set this in your workflow file: `.github/workflows/CliqConnector.yml`.
+## 2B. Available Regions
 
-You can provide these values in **either** of these two ways:
-
-1. **GitHub Variables** (recommended)
-2. **Directly in the workflow YAML**
-
-Use the job-level `env` keys:
-
-```yaml
-env:
-  CLIQ_NOTIFICATION_MODE: ${{ vars.CLIQ_NOTIFICATION_MODE || 'bot' }}
-  CLIQ_BOT_UNIQUE_NAME: ${{ vars.CLIQ_BOT_UNIQUE_NAME || 'githubnotification' }}
-```
-
-- Set `CLIQ_NOTIFICATION_MODE` to `user` for normal webhook/user mode.
-- Set `CLIQ_NOTIFICATION_MODE` to `bot` for bot notification mode.
-- **`CLIQ_BOT_UNIQUE_NAME` is required when mode is `bot`.**
-
-Option 1: GitHub Variables (recommended)
-
-1. In GitHub repository settings, go to `Secrets and variables` -> `Actions` -> `Variables`.
-2. Create **`CLIQ_NOTIFICATION_MODE`** with value **`user`** or **`bot`**.
-3. If mode is `bot`, create **`CLIQ_BOT_UNIQUE_NAME`** with your actual bot unique name.
-
-Option 2: Directly in `CliqConnector.yml`
-
-```yaml
-env:
-  CLIQ_NOTIFICATION_MODE: bot
-  CLIQ_BOT_UNIQUE_NAME: githubnotification
-```
-
-Use this if you want fixed values in the workflow file itself.
-
-### Bot mode setup
-
-If you want **bot notification mode**, configure:
-
-1. **Create the bot in Zoho Cliq**.
-2. **Get the bot unique name** from the bot configuration/details page.
-  - Open **Integrations** -> **Bots**.
-  - Select your bot.
-  - In the bot details panel, check the **API Endpoint**.
-  - The value after `/bots/` in the endpoint is the **bot unique name**.
-  - Example: if the API endpoint is `https://cliq.zoho.com/api/v2/bots/githubnotification/message`, then the bot unique name is **`githubnotification`**.
-3. **Add the bot to the target Cliq channel** where notifications should be posted.
-4. In GitHub repository settings, go to `Secrets and variables` -> `Actions` -> `Variables`.
-5. Create **`CLIQ_NOTIFICATION_MODE=bot`**.
-6. Create **`CLIQ_BOT_UNIQUE_NAME=<your bot unique name>`**.
-
-In bot mode:
-
-- The workflow reuses the existing **`ENDPOINT`** secret.
-- The workflow appends **`bot_unique_name`** automatically.
-- If **`CLIQ_BOT_UNIQUE_NAME`** is missing, workflow fails fast.
-
-### User mode setup
-
-If you want normal user/webhook notification mode, configure:
-
-1. `CLIQ_NOTIFICATION_MODE=user`
-
-In user mode:
-
-- **`CLIQ_BOT_UNIQUE_NAME` is not required.**
-- Workflow will use the webhook endpoint as-is.
-- **You do not need to reconfigure endpoint in this section**; keep using the existing **`ENDPOINT`** secret configured under **GitHub Secret for Channel Endpoint**.
-
-## Available Regions
-
-Use the same base domain as your Zoho Cliq organization region when configuring the channel endpoint.
+Zoho Cliq is available in multiple regions. Use the same base domain as your Cliq organization URL when building the `ENDPOINT` secret.
 
 Common region domains:
 
@@ -100,174 +110,191 @@ Common region domains:
 - AU: `https://cliq.zoho.com.au`
 - JP: `https://cliq.zoho.jp`
 
-Endpoint pattern:
+Webhook endpoint format:
 
 - `<region-base>/api/v2/channelsbyname/<CHANNEL_UNIQUE_NAME>/message?zapikey=<WEBHOOK_TOKEN>`
 
 Examples:
 
-- `https://cliq.zoho.com/api/v2/channelsbyname/GitHubupdates/message?zapikey=1001.xxxxx`
-- `https://cliq.zoho.in/api/v2/channelsbyname/GitHubupdates/message?zapikey=1001.xxxxx`
-  
-## GitHub Secret for Channel Endpoint 🔗
-You must add **GitHub Secret** which contains the channel endpoint in the format 
+- US: `https://cliq.zoho.com/api/v2/channelsbyname/engineering/message?zapikey=1001.xxxxx`
+- IN: `https://cliq.zoho.in/api/v2/channelsbyname/engineering/message?zapikey=1001.xxxxx`
 
-```
-<Cliq Channel Endpoint>?zapikey=<Cliq Webhook Token>
-```
+Bot mode note:
 
-You must create a **GitHub Secret** for providing the **Channel Endpoint** by
-  - Go to the Repository where the CliqInformer will be added and go to the '**Settings**' tab.
-  - Select '**Secrets and variables**' and click on '**Actions**' in the dropdown.
-  - Click on '**New repository secret**' and enter the name of your secret and also enter the Cliq channel endpoint  as the Secret (in above mentioned format)
+- In bot mode, workflow appends `bot_unique_name=<BOT_UNIQUE_NAME>` automatically.
+- Do not hardcode a different region in workflow; keep `ENDPOINT` in the same region as your Cliq org.
 
-and use the secret as the '**channel-endpoint**' input in the job of your workflow.
+## 2A. What Changed Now (v3)
 
-```yaml
-  steps:
-    - uses: Integrations-dev/GitHub-Informer@v1
-      with:
-        channel-endpoint: ${{ secrets.SECRET_NAME }}
-```
+The workflow supports both user mode and bot mode. It currently defaults to user mode unless `CLIQ_NOTIFICATION_MODE` is set explicitly.
 
-## Store Cliq Thread ID in GitHub Project
+See [Section 2A-1](#2a-1-configuration-variables-reference) below for a full reference table of all four configuration variables (`CLIQ_NOTIFICATION_MODE`, `CLIQ_BOT_UNIQUE_NAME`, `CLIQ_THREAD_FIELD_ID`, `CLIQ_PROJECT_NUMBER`), where to set them, and their defaults.
 
-For PR events, you can store and reuse the Cliq thread ID in a GitHub Project V2 custom text field (recommended).
+Where changed:
 
-Create GitHub classic token for `PROJECT_TOKEN`:
+- [TemplateRepositoryNew/.github/workflows/CliqConnector.yml](TemplateRepositoryNew/.github/workflows/CliqConnector.yml)
 
-1. Open https://github.com/settings/tokens
-2. Click Generate new token (classic)
-3. Select scopes:
-  - **`repo`**
-  - **`project`**
-4. Copy the token and save it as repository secret **`PROJECT_TOKEN`**
+What was added:
 
-Required configuration:
+1. `CLIQ_NOTIFICATION_MODE` (default: `user`) at job env level.
+2. `CLIQ_BOT_UNIQUE_NAME` from repository/organization variable.
+3. Endpoint preparation step that appends `bot_unique_name=<CLIQ_BOT_UNIQUE_NAME>` to `ENDPOINT`.
+4. Validation that fails fast if bot mode is selected and bot unique name is missing.
+5. Redacted endpoint debug preview in logs to verify runtime resolution.
 
-- Secret: **`PROJECT_TOKEN`**
-  - Use a classic PAT with **`repo`** and **`project`** scopes.
-- Env: **`CLIQ_THREAD_STORAGE_MODE=project`**
-- Env: **`GITHUB_PROJECT_OWNER=<owner login>`**
-- Env: **`GITHUB_PROJECT_NUMBER=<project number>`**
-- Env: **`GITHUB_PROJECT_THREAD_FIELD_ID=<field identifier>`**
-  - Can be either:
-    - numeric field identifier from the Project field settings URL, or
-    - GraphQL field node id (`PVTF_*`).
+What you must configure:
 
-Behavior:
+1. Secret `ENDPOINT` with your channel endpoint containing `zapikey`.
+2. Variable `CLIQ_BOT_UNIQUE_NAME` with your real Cliq bot unique name.
+3. Optional variable `CLIQ_NOTIFICATION_MODE` (`bot` or `user`).
 
-1. Action resolves the PR item in the configured Project V2.
-2. Action reads existing thread ID from the configured custom field.
-3. If not found, action posts a new Cliq message and captures `message_id`.
-4. Action writes captured thread ID to the same project field.
-5. Later PR events reuse that saved value and continue in the same Cliq thread.
+If you set `CLIQ_NOTIFICATION_MODE=bot` and do not set `CLIQ_BOT_UNIQUE_NAME`, the workflow intentionally fails. If you keep user mode, bot unique name is not required.
 
-If project mode is enabled and project field update fails, action logs the failure. Ensure **`PROJECT_TOKEN`**, **project owner/number**, and **field identifier** are correct.
+## 2A-1. Configuration Variables Reference
 
-## Custom Event Messages ⚙️
+All 4 values below are **GitHub Actions Variables** (`vars.*`), configured
+**once** by the person setting up this workflow in their own repository
+(usually a repo/org Admin or maintainer) — not by individual contributors,
+and not by editing `CliqConnector.yml` directly. You never need to touch the
+YAML to set these; the workflow already references them via `vars.NAME`.
 
-Suppose you need a notification in Cliq for only selected events or actions,
-  - you may change the '**_on_**' key of the YAML File where the Action is called.
-  - Or additionally, you can set all the required messages and declare the input '**set-message-if-none**' as '**false**' to avoid messages from events you don't want. 
-  
-You provide default messages to all kind of actions that triggers a workflow.
+Set them at: `Settings` -> `Secrets and variables` -> `Actions` -> **Variables** tab
+(as distinct from the **Secrets** tab used in Section 2 — see the table there
+for why tokens must never go here).
 
-The messages can be customized by giving the input '**_event_-message**' (where '_event_' is the event for which you would like to customize the message).
+| Variable name | Used as (in YAML) | Required? | Default if unset | Purpose |
+|---|---|---|---|---|
+| `CLIQ_NOTIFICATION_MODE` | `CLIQ_NOTIFICATION_MODE` | No | `'user'` | Selects `user` (webhook auth) or `bot` (bot auth) posting mode. See Cliq auth modes in Section 2. |
+| `CLIQ_BOT_UNIQUE_NAME` | `CLIQ_BOT_UNIQUE_NAME` | Only if `CLIQ_NOTIFICATION_MODE=bot` | `''` (empty) | Your Cliq bot's unique name; appended as `bot_unique_name=` query param on the endpoint. Workflow fails fast if mode is `bot` and this is blank. |
+| `CLIQ_THREAD_FIELD_ID` | `GITHUB_PROJECT_THREAD_FIELD_ID` | **Yes — no default** | none | Numeric identifier from the Project field settings URL, or a GraphQL node id (`PVTF_*`), identifying the "Cliq Thread ID" custom field on your GitHub Project V2. Must be created by you before the workflow can update thread references correctly. |
+| `CLIQ_PROJECT_NUMBER` | `GITHUB_PROJECT_NUMBER` | **Yes — no default** | none | Your GitHub Project V2 number (the number in the project's URL, e.g. the `1` in `https://github.com/orgs/OrgZylker/projects/1`). Must be created by you; the workflow will not guess a project. |
 
-For ex: To set a custom message for a Pull Request event, you must define the input as,
+Notes:
 
-```yaml
-  pull-request-message: 'A Pull Request has been Opened'
-```
+- `CLIQ_NOTIFICATION_MODE` and `CLIQ_BOT_UNIQUE_NAME` use the
+  `${{ vars.X || 'default' }}` pattern, so a missing variable falls back to
+  the default shown above. `CLIQ_THREAD_FIELD_ID` and `CLIQ_PROJECT_NUMBER`
+  have **no fallback** — they are read as `${{ vars.X }}` with nothing after
+  the `||`, so you must create both of these two variables yourself before
+  first use. Validation for other required-in-context values (like
+  `CLIQ_BOT_UNIQUE_NAME` in bot mode) happens at runtime in the
+  **Prepare Cliq endpoint** step, with a clear failure message.
+- These are plain-text **Variables**, not **Secrets** — anyone with read
+  access to the repo can see their values, and they appear unmasked in
+  workflow run logs. This is intentional: none of these four values are
+  credentials. Do not put a token or webhook key in a `vars.*` entry — see
+  Section 2 for where the actual sensitive values (`ENDPOINT`,
+  `PROJECT_TOKEN`, `AI_REVIEW_TOKEN`) belong.
+- Because these are plain repository/organization Variables (not
+  environment-scoped), they are **not** gated by the `environment:
+  cliq-production` protection described in Section 2 — any repo collaborator
+  with Write access can create or edit them. That's acceptable here since
+  none of the four are sensitive; if you want stricter control anyway,
+  GitHub also supports environment-level Variables, referenced the same way
+  once the job declares that environment.
+- Setting up each variable is a one-time action per repository — you do not
+  need to repeat it per pull request, per branch, or per workflow run.
 
-## Default Message 📓
+## 3. Configure Workflow Project Settings
 
-If you wish to add a single custom message for all kinds of events, you may use the '**default-message**'. 
+For a quick summary of all configurable variables (including the two covered
+in detail below), see [Section 2A-1](#2a-1-configuration-variables-reference).
 
-For ex: To set a default custom message , you must define the _default-message_ as
+In [TemplateRepositoryNew/.github/workflows/CliqConnector.yml](TemplateRepositoryNew/.github/workflows/CliqConnector.yml), keep:
 
-```yaml
-  default-message: 'A (event) has been (action)'
-```
+- `CLIQ_THREAD_STORAGE_MODE: project`
+- `GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}`
 
-## Shortcuts ⏩
+Project field identifier source:
 
-We also provide several shortcuts to obtain the variables that you want to insert in the message, such as,
-  - **(event)**: which will be replaced with the event that the workflow is triggered by
-  - **(action)**: which will be replaced by the Action the Event is performing with
-  - **(me)**: which will be replaced with the GitHub user performing the action.
-  - **(repo)**: which will be replaced by the Repository where the GitHub action is performed
-  - **(ref)**: which will be replaced by the Branch/Tag where the GitHub action is performed
-  - **(workflow)**: which will be replaced by the workflow on which the GitHub Action is performed
-  - **(rule)**: which will be replaced by the Branch Protection Rule (if the Event is Branch Protection Rule)
-  - **(run)**: which will be replaced by the Check Run (if the Event is Check Run)
-  - **(branch)**: which will be replaced by the Branch/Tag which is Created/Deleted (if the Event is Create / Delete)
-  - **(deployment)**: which will be replaced by the deployment (if the Event is Deployment or Deployment Status)
-  - **(discussion)**: which will be replaced by the discussion which is worked on
-  - **(category)**: which will be replaced by the Category Name to which the discussion is changed to
-  - **(issue)**: which will be replaced by the issue (if the Event is Issue or Issue Comment)
-  - **(label)**: which will be replaced by the label that is being worked on or added to
-  - **(milestone)**: which will be replaced by the milestone that is being worked on or added to
-  - **(assignee)**: which will be replaced by the User Assigned to the Issue or Pull Request
-  - **(pull)**: which will be replaced by the Pull Request that is worked on
-  - **(package)**: which will be replaced the Registry Package that is being worked on
-  - **(release)**: which will be replaced by the release that is being worked on
-  - **(status)**: which will be replaced by the Status of the Event (if the Event is Deployment Status or Status)
+- **Do not edit `CliqConnector.yml` to set this value.** The YAML already
+  contains a fixed reference — `GITHUB_PROJECT_THREAD_FIELD_ID: ${{
+  vars.CLIQ_THREAD_FIELD_ID }}` — and that line should stay exactly as-is.
+  It is only a *pointer* to a GitHub Actions Variable; it does not carry the
+  actual field ID itself.
+- `vars.CLIQ_THREAD_FIELD_ID` means a GitHub Actions Variable named `CLIQ_THREAD_FIELD_ID`.
+  The **only** place its actual value is supplied is the repo/org
+  `Settings` -> `Secrets and variables` -> `Actions` -> **Variables** tab
+  (see steps below) — never inside the workflow file.
+- **This variable is required — there is no default value.** You must create
+  it before running the workflow. Set it to either:
+  - the numeric field identifier from the Project field settings URL, or
+  - the GraphQL node id directly (`PVTF_*`).
 
 Example:
 
-A GitHub Action is triggered by (me) at (repo).
+- Project field settings URL:
+  - `https://github.com/users/<owner>/projects/<number>/settings/fields/377241900`
+- Here `377241900` can be used as `CLIQ_THREAD_FIELD_ID`.
 
-will change to 
+When this identifier is provided, the action resolves the correct GraphQL field node id internally and uses it to update the project item.
 
-A GitHub Action is triggered by [user_name](https://www.github.com/user_name) at [user_name/repository_name](https://www.github.com/user_name/repository_name).
+### One-time setup: create the `CLIQ_THREAD_FIELD_ID` Variable (not a yml edit)
 
-Upon successfully providing the inputs as per criteria, the message will be successfully sent to the Cliq Channel.
+This is a **Settings-only** action, done once per repository. You are **not**
+editing `CliqConnector.yml` at any point in this process — the YAML keeps its
+existing `${{ vars.CLIQ_THREAD_FIELD_ID }}` reference untouched, forever. You
+are only supplying the value that reference reads at runtime, and that value
+lives exclusively in the repo/org Variables store, never in the workflow file.
 
-The GitHub events that trigger a workflow are listed below, among which all events are supported by GitHub Informer
+1. Go to repository (or organization) **Settings** (the GitHub web UI page —
+   not `CliqConnector.yml`, not any file in this repo).
+2. Open `Secrets and variables` -> `Actions` -> the **Variables** tab.
+3. Click **New repository variable** (or **New organization variable**):
+   - Name: `CLIQ_THREAD_FIELD_ID`
+   - Value: the numeric identifier from the field settings URL (see example above)
+4. Save. That's it — no commit, no PR, no yml change required.
 
-|    branch_protection_rule    |          check_run          |          check_suite         |            create            |           delete            |
-|            :----:            |           :----:            |            :----:            |            :----:            |           :----:            |
-| **deployment**               | **deployment_status**       | **discussion**               | **discussion_comment**       | **fork**                    |
-| **gollum**                   | **issue_comment**           | **issues**                   | **label**                    | **milestone**               |
-| **page_build**               | **public**                  | **pull_request**             | **pull_request_comment**     | **pull_request_review**     |
-|**pull_request_review_comment**| **pull_request_target**    | **push**                     | **registry_package**         | **release**                 |
-| **repository_dispatch**     | **schedule**                 | **status**                   | **watch**                    | **workflow_dispatch**       |
+Because the workflow already reads `${{ vars.CLIQ_THREAD_FIELD_ID }}`, the
+same YAML works unmodified for every repository that adopts this template;
+only the Variable's value differs per repository.
 
-## Base YAML Code 🗒
+Project number source:
 
-Don't worry about remembering a lot of stuff. Here is the minimal code that's required to start with. 
+- **Do not edit `CliqConnector.yml` to set this value.** The YAML already
+  contains a fixed reference — `GITHUB_PROJECT_NUMBER: ${{
+  vars.CLIQ_PROJECT_NUMBER }}` — and that line should stay exactly as-is.
+  It is only a *pointer* to a GitHub Actions Variable; it does not carry the
+  actual project number itself.
+- `vars.CLIQ_PROJECT_NUMBER` means a GitHub Actions Variable named `CLIQ_PROJECT_NUMBER`.
+  The **only** place its actual value is supplied is the repo/org
+  `Settings` -> `Secrets and variables` -> `Actions` -> **Variables** tab
+  (see steps below) — never inside the workflow file.
+- **This variable is required — there is no default value.** You must create
+  it with your actual GitHub Project V2 number before running the workflow.
+  Find the number in your project's URL, e.g. the `1` in
+  `https://github.com/orgs/<orgname>/projects/1` (or
+  `https://github.com/users/<username>/projects/1` for a user-owned project).
 
-```yaml
-name : Communicating with Cliq
-on:
-  #you may add the events you like to get notified
-  push:
-    
-jobs:
-  test_name:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: Integrations-dev/GitHub-Informer@v1
-        with:
-          channel-endpoint: ${{ secrets.ENDPOINT }}
-```
+Example:
 
-That's all! You will start getting notified for each event occurring in GitHub through the GitHub Action.
+- Project URL: `https://github.com/orgs/OrgZylker/projects/1`
+- Here `1` (the number right after `/projects/`) is the value to use as
+  `CLIQ_PROJECT_NUMBER`.
 
-Go to the Actions tab of the repository to view the message status.
+### One-time setup: create the `CLIQ_PROJECT_NUMBER` Variable (not a yml edit)
 
-## AI Review Gate (OpenAI, Claude, Gemini)
+Same rule as above: this is a **Settings-only** action, done once per
+repository, and it never touches `CliqConnector.yml`.
 
-You can enable an AI review gate for pull requests. The action can run against OpenAI, Claude, or Gemini.
+1. Go to repository (or organization) **Settings** (the GitHub web UI page —
+   not `CliqConnector.yml`, not any file in this repo).
+2. Open `Secrets and variables` -> `Actions` -> the **Variables** tab.
+3. Click **New repository variable** (or **New organization variable**):
+   - Name: `CLIQ_PROJECT_NUMBER`
+   - Value: your project number — e.g. for
+     `https://github.com/orgs/OrgZylker/projects/1`, the value is `1`
+4. Save. That's it — no commit, no PR, no yml change required.
 
-- If the AI decision is pass, the check passes and no PR comment is added.
-- If the AI decision is fail (or the AI call fails), the check fails, a PR comment is added, and a failure message is posted to the Cliq PR thread.
+Because the workflow already reads `${{ vars.CLIQ_PROJECT_NUMBER }}`, the same
+YAML works unmodified for every repository that adopts this template; only
+the Variable's value differs per repository.
 
-### Required GitHub Workflow Permissions
+The workflow uses auto-resolve mode for Project ID and Field ID via GraphQL.
 
-Your workflow must include:
+## 4. Required Workflow Permissions
+
+The workflow must include:
 
 ```yaml
 permissions:
@@ -275,93 +302,64 @@ permissions:
   checks: write
   issues: write
   pull-requests: write
+  repository-projects: write
 ```
 
-### Recommended Workflow Usage
+## 5. Event Flow
 
-```yaml
-name: PR AI Review Gate
+Current recommended PR event source is `pull_request_target` only (to avoid duplicate opened/closed notifications).
 
-on:
-  pull_request:
-    types: [opened, reopened, synchronize, labeled]
+Flow on PR events:
 
-permissions:
-  contents: read
-  checks: write
-  issues: write
-  pull-requests: write
+1. Ensure PR is present in Project table.
+2. Post notification to Cliq.
+3. Resolve existing thread ID from Project field.
+4. If unavailable, fallback to PR marker comment storage.
+5. Save/update thread ID (project first, marker fallback).
+6. Run AI review gate and publish check run.
 
-jobs:
-  ai-review:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: Integrations-dev/GitHub-Informer@v1
-        with:
-          channel-endpoint: ${{ secrets.CLIQ_ENDPOINT }}
-          ai-review-enabled: true
-          ai-review-trigger: auto
-          ai-review-on-sync: true
-          ai-review-label: ai-review
-          ai-review-check-name: AI Review Gate
-          ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}
-          ai-review-api-url: https://api.openai.com/v1/chat/completions
-          ai-review-model: gpt-4.1-mini
-```
+## 6. Verification Checklist
 
-### Provider Configuration
+After opening a PR:
 
-Only the token should be stored as a secret. Endpoint and model can be plain workflow values.
+1. Action logs show `EventNameRaw=pull_request_target`.
+2. `Ensure PR is in Project table` step shows:
+   - `PR inserted into project table successfully.` or
+   - `PR already exists in project table.`
+3. Cliq integration logs show:
+   - `Saved Cliq thread id in GitHub Project custom field.` (preferred), or
+   - fallback marker save message when project field write fails.
+4. On `synchronize` and `closed`, messages should continue in the same thread.
 
-OpenAI
+## 7. Troubleshooting
 
-```yaml
-ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}   # token starts with sk-
-ai-review-api-url: https://api.openai.com/v1/chat/completions
-ai-review-model: gpt-4.1-mini
-```
+If PR is not added to project table:
 
-Claude
+- Verify `PROJECT_TOKEN` is classic PAT with `repo` + `project` scopes.
+- Verify project owner is correct and `CLIQ_PROJECT_NUMBER` variable matches your actual project number.
+- Check GraphQL debug step output for NOT_FOUND / permission errors.
 
-```yaml
-ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}   # token starts with sk-ant-
-ai-review-api-url: https://api.anthropic.com/v1/messages
-ai-review-model: claude-3-5-sonnet-latest
-```
+If thread ID is not reused:
 
-Gemini
+- Confirm `CLIQ_THREAD_FIELD_ID` matches the numeric identifier from the Project field settings URL, or provide the GraphQL node id directly.
+- Check for `Saved Cliq thread id in GitHub Project custom field.` in logs.
+- If absent, check project field resolution logs.
 
-```yaml
-ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}   # token starts with AIza
-ai-review-api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent
-ai-review-model: gemini-1.5-pro
-```
+If merge shows AI check as expected/waiting:
 
-### Branch Protection
+- Ensure required check name matches `ai-review-check-name` exactly (`AI Review Gate`).
+- Ensure branch protection does not require stale/old check contexts.
 
-To enforce mentor approval policy, add the check name from **`ai-review-check-name`** (default: **`AI Review Gate`**) as a **required status check** in branch protection.
+## 8. Security Notes
 
-### Configure Required Status Check (Step-by-step)
-
-1. In workflow, set the check name you want:
-
-```yaml
-ai-review-check-name: AI Review Gate
-```
-
-2. Run the workflow once on a PR so GitHub can see this check context.
-
-3. In GitHub repository settings, open `Rules` (or `Branches` -> branch protection rule).
-
-4. Enable `Require status checks to pass`.
-
-5. Add the same check name exactly (example: `AI Review Gate`) under required checks.
-
-Important:
-
-- **If you rename `ai-review-check-name`, update the required check name in rules to the same value.**
-- **Name matching is exact.** Any mismatch causes **`Waiting for status to be reported`**.
-- After changing rules/check name, **push a new commit or re-run checks once** so the new context is picked.
-
-Here is a Template Repository for the GitHub Informer which you can use as a baseline to work with and customize to your usage.
-https://www.github.com/Integrations-dev/RepositoryTemplate
+- Never print token values in logs.
+- Rotate PATs regularly.
+- Use least required scopes.
+- Store `ENDPOINT`, `PROJECT_TOKEN`, and `AI_REVIEW_TOKEN` as **Environment
+  secrets** under a protected environment (`cliq-production`), not as plain
+  repository secrets and never as `vars.*`. See section 2 for setup.
+- Restrict the environment's deployment branches to protected branches only,
+  so forked-repo PRs cannot trigger jobs that read these secrets.
+- Review the environment's required reviewers list periodically; only admins
+  or explicitly trusted maintainers should be able to approve runs or edit
+  secret values.
