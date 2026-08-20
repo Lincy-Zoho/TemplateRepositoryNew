@@ -10,13 +10,19 @@ name : Communicating with Cliq
 # USER-CONFIGURABLE FIELDS — where each one is set:
 #
 #   A) Repo/Org Variables  (Settings -> Secrets and variables -> Actions -> Variables)
+#      OR typed directly in the yml below (see the `||` fallback on each line
+#      in the `env:` block) — pick whichever you prefer per field:
 #        - CLIQ_NOTIFICATION_MODE   optional ("user" or "bot"; defaults to "user")
 #        - CLIQ_BOT_UNIQUE_NAME     required only when CLIQ_NOTIFICATION_MODE=bot
-#        - CLIQ_PROJECT_NUMBER      REQUIRED, no default. GitHub Project (v2) number
-#                                    to log PR threads into; e.g. the "1" in
+#        - CLIQ_PROJECT_NUMBER      REQUIRED. GitHub Project (v2) number to log PR
+#                                    threads into; e.g. the "1" in
 #                                    https://github.com/orgs/<orgname>/projects/1
-#        - CLIQ_THREAD_FIELD_ID     REQUIRED, no default. Numeric field id or
-#                                    PVTF_* node id for the Cliq-thread field
+#                                    Set as a repo/org Variable (recommended for
+#                                    public/shared repos), or type the number
+#                                    directly into the yml fallback below.
+#        - CLIQ_THREAD_FIELD_ID     REQUIRED. Numeric field id or PVTF_* node id
+#                                    for the Cliq-thread field. Same either/or
+#                                    choice as CLIQ_PROJECT_NUMBER above.
 #
 #   B) Environment Secrets  (Settings -> Environments -> cliq-production -> Secrets)
 #      Required. Must live in the protected "cliq-production" environment,
@@ -138,22 +144,33 @@ jobs:
       # bot's unique name so it gets appended to the endpoint as a query param.
       CLIQ_BOT_UNIQUE_NAME: ${{ vars.CLIQ_BOT_UNIQUE_NAME || '' }}
 
-      # USER CONFIG (variable): CLIQ_THREAD_FIELD_ID — REQUIRED, no default.
+      # USER CONFIG (variable OR in-file): CLIQ_THREAD_FIELD_ID — REQUIRED.
       # The GitHub Project (v2) field used to store the Cliq thread reference
       # per PR. Use the numeric field id from the Project field settings URL,
-      # or the GraphQL node id directly (PVTF_*). You MUST create this
-      # variable yourself; there is no fallback value — leaving it unset
-      # will prevent thread reuse from working correctly.
+      # or the GraphQL node id directly (PVTF_*).
+      #
+      # Option 1 (recommended for public/shared repos): create a repo/org
+      #   Variable named CLIQ_THREAD_FIELD_ID — it takes precedence below.
+      # Option 2 (quick edit, private repos): leave the Variable unset and
+      #   replace the '' after the || with your field id directly, e.g.:
+      #   GITHUB_PROJECT_THREAD_FIELD_ID: ${{ vars.CLIQ_THREAD_FIELD_ID || 'PVTF_lADOAbC123' }}
+      # Leaving both the Variable and the fallback empty will prevent thread
+      # reuse from working correctly.
       GITHUB_PROJECT_THREAD_FIELD_ID: ${{ vars.CLIQ_THREAD_FIELD_ID || '' }}
 
-      # USER CONFIG (variable): CLIQ_PROJECT_NUMBER — REQUIRED, no default.
+      # USER CONFIG (variable OR in-file): CLIQ_PROJECT_NUMBER — REQUIRED.
       # The GitHub Project (v2) number that PRs get logged into for thread
       # reuse. Find it in your project's URL:
       #   https://github.com/orgs/<orgname>/projects/1
       #                                              ^-- this is the number
       # (org-owned projects) or https://github.com/users/<username>/projects/1
-      # (user-owned projects). You MUST create this variable yourself; there
-      # is no fallback value.
+      # (user-owned projects).
+      #
+      # Option 1 (recommended for public/shared repos): create a repo/org
+      #   Variable named CLIQ_PROJECT_NUMBER — it takes precedence below.
+      # Option 2 (quick edit, private repos): leave the Variable unset and
+      #   replace the '' after the || with your project number directly, e.g.:
+      #   GITHUB_PROJECT_NUMBER: ${{ vars.CLIQ_PROJECT_NUMBER || '1' }}
       GITHUB_PROJECT_NUMBER: ${{ vars.CLIQ_PROJECT_NUMBER || '' }}
 
       # ---------------------------------------------------------------------
@@ -194,6 +211,22 @@ jobs:
         run: |
           if [[ -z "$PROJECT_TOKEN" ]]; then
             echo "PROJECT_TOKEN secret is missing. Add a classic PAT with repo and project scopes."
+            exit 1
+          fi
+
+      - name: Validate project number and thread field id
+        shell: bash
+        run: |
+          if [[ -z "$GITHUB_PROJECT_NUMBER" ]]; then
+            echo "CLIQ_PROJECT_NUMBER is not set. Either create a repo/org Variable named"
+            echo "CLIQ_PROJECT_NUMBER, or edit CliqConnector.yml and put the project number"
+            echo "directly in the fallback: vars.CLIQ_PROJECT_NUMBER || '1'"
+            exit 1
+          fi
+          if [[ -z "$GITHUB_PROJECT_THREAD_FIELD_ID" ]]; then
+            echo "CLIQ_THREAD_FIELD_ID is not set. Either create a repo/org Variable named"
+            echo "CLIQ_THREAD_FIELD_ID, or edit CliqConnector.yml and put the field id"
+            echo "directly in the fallback: vars.CLIQ_THREAD_FIELD_ID || 'PVTF_...'"
             exit 1
           fi
 
