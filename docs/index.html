@@ -275,13 +275,13 @@
           </tr>
           <tr>
             <td><code>CLIQ_PROJECT_NUMBER</code></td>
-            <td>Variable</td>
-            <td>GitHub Project V2 number. Maps internally to <code>GITHUB_PROJECT_NUMBER</code> in the workflow env.</td>
+            <td>Variable — <strong>required, no default</strong></td>
+            <td>GitHub Project V2 number, e.g. the <code>1</code> in <code>https://github.com/orgs/&lt;orgname&gt;/projects/1</code>. Maps internally to <code>GITHUB_PROJECT_NUMBER</code> in the workflow env. You must create this variable yourself.</td>
           </tr>
           <tr>
             <td><code>CLIQ_THREAD_FIELD_ID</code></td>
-            <td>Variable</td>
-            <td>Project field identifier or GraphQL field node id used to store the Cliq thread id. Maps internally to <code>GITHUB_PROJECT_THREAD_FIELD_ID</code> in the workflow env.</td>
+            <td>Variable — <strong>required, no default</strong></td>
+            <td>Project field identifier or GraphQL field node id used to store the Cliq thread id. Maps internally to <code>GITHUB_PROJECT_THREAD_FIELD_ID</code> in the workflow env. You must create this variable yourself.</td>
           </tr>
         </tbody>
       </table>
