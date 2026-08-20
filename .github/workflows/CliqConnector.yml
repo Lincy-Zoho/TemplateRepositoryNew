@@ -144,7 +144,7 @@ jobs:
       # or the GraphQL node id directly (PVTF_*). You MUST create this
       # variable yourself; there is no fallback value — leaving it unset
       # will prevent thread reuse from working correctly.
-      GITHUB_PROJECT_THREAD_FIELD_ID: ${{ vars.CLIQ_THREAD_FIELD_ID }}
+      GITHUB_PROJECT_THREAD_FIELD_ID: ${{ vars.CLIQ_THREAD_FIELD_ID || '' }}
 
       # USER CONFIG (variable): CLIQ_PROJECT_NUMBER — REQUIRED, no default.
       # The GitHub Project (v2) number that PRs get logged into for thread
@@ -154,7 +154,7 @@ jobs:
       # (org-owned projects) or https://github.com/users/<username>/projects/1
       # (user-owned projects). You MUST create this variable yourself; there
       # is no fallback value.
-      GITHUB_PROJECT_NUMBER: ${{ vars.CLIQ_PROJECT_NUMBER }}
+      GITHUB_PROJECT_NUMBER: ${{ vars.CLIQ_PROJECT_NUMBER || '' }}
 
       # ---------------------------------------------------------------------
       # (C) In-file workflow inputs — edit these directly in this file.
