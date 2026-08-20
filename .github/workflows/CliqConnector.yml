@@ -1,5 +1,44 @@
 name : Communicating with Cliq
 
+# ============================================================================
+# CliqConnector.yml — Zoho Cliq notification + AI PR review workflow
+#
+# This file is meant to be copied as-is into the consuming repository at
+# .github/workflows/CliqConnector.yml. No values need to be edited directly
+# in this file except the three AI_REVIEW_* lines noted below (optional).
+#
+# USER-CONFIGURABLE FIELDS — where each one is set:
+#
+#   A) Repo/Org Variables  (Settings -> Secrets and variables -> Actions -> Variables)
+#        - CLIQ_NOTIFICATION_MODE   optional ("user" or "bot"; defaults to "user")
+#        - CLIQ_BOT_UNIQUE_NAME     required only when CLIQ_NOTIFICATION_MODE=bot
+#        - CLIQ_PROJECT_NUMBER      REQUIRED, no default. GitHub Project (v2) number
+#                                    to log PR threads into; e.g. the "1" in
+#                                    https://github.com/orgs/<orgname>/projects/1
+#        - CLIQ_THREAD_FIELD_ID     REQUIRED, no default. Numeric field id or
+#                                    PVTF_* node id for the Cliq-thread field
+#
+#   B) Environment Secrets  (Settings -> Environments -> cliq-production -> Secrets)
+#      Required. Must live in the protected "cliq-production" environment,
+#      NOT as plain repo secrets, so only admins/approved reviewers can set them.
+#        - ENDPOINT           (Zoho Cliq incoming webhook URL)
+#        - PROJECT_TOKEN      (classic GitHub PAT with repo + project scopes)
+#        - AI_REVIEW_TOKEN    (API key for the AI provider below; required only
+#                              if AI_REVIEW_ENABLED is true)
+#
+#   C) In-file workflow inputs  (edit directly below, in the `env:` block of
+#      the `connecting_cliq` job). Plain values, not secrets:
+#        - AI_REVIEW_ENABLED   (true | false)
+#        - AI_REVIEW_SERVICE   (openai | claude | gemini)
+#        - AI_REVIEW_MODEL     (model name for the chosen service, or blank
+#                                for the provider's default)
+#
+#   D) One-time GitHub setup (no yml edits):
+#        - Run this workflow once on a real PR so the "AI Review Gate" check
+#          context is registered, then add it as a required status check in
+#          Branch Protection / Rules.
+# ============================================================================
+
 on:
   branch_protection_rule:
     #types : [created , edited , deleted]
@@ -77,20 +116,80 @@ permissions:
 jobs:
   connecting_cliq:
     runs-on: ubuntu-latest
+    # Gates ENDPOINT, PROJECT_TOKEN and AI_REVIEW_TOKEN behind a protected
+    # GitHub Environment. Only repo/org Admins (or designated required
+    # reviewers) can view, create, or modify these secrets, and runs against
+    # this environment can be restricted to protected branches only.
+    # Configure this in: Settings -> Environments -> cliq-production
+    environment: cliq-production
     env:
-      # Supported values: user or bot. Defaulted to bot for bot-auth posting.
+      # ---------------------------------------------------------------------
+      # (A) Repo/Org VARIABLES — optional, all have safe defaults.
+      # Set at: Settings -> Secrets and variables -> Actions -> Variables tab.
+      # ---------------------------------------------------------------------
+
+      # USER CONFIG (variable): CLIQ_NOTIFICATION_MODE
+      # Values: "user" (default here) or "bot". Use "bot" to post as a
+      # configured Cliq bot instead of the webhook's default identity.
       CLIQ_NOTIFICATION_MODE: ${{ vars.CLIQ_NOTIFICATION_MODE || 'user' }}
-      # Required when CLIQ_NOTIFICATION_MODE=bot. Configure in repo/org variable.
+
+      # USER CONFIG (variable): CLIQ_BOT_UNIQUE_NAME
+      # Required ONLY when CLIQ_NOTIFICATION_MODE=bot above. Set it to the
+      # bot's unique name so it gets appended to the endpoint as a query param.
       CLIQ_BOT_UNIQUE_NAME: ${{ vars.CLIQ_BOT_UNIQUE_NAME || '' }}
-      # Configure this once. Use the numeric field identifier from the Project field settings URL,
-      # or provide the GraphQL node id directly (PVTF_*).
-      GITHUB_PROJECT_THREAD_FIELD_ID: ${{ vars.CLIQ_THREAD_FIELD_ID || '' }}
-      # Configure this once. Optional repo/org variable CLIQ_PROJECT_NUMBER can override it.
-      GITHUB_PROJECT_NUMBER: ${{ vars.CLIQ_PROJECT_NUMBER || '' }}
+
+      # USER CONFIG (variable): CLIQ_THREAD_FIELD_ID — REQUIRED, no default.
+      # The GitHub Project (v2) field used to store the Cliq thread reference
+      # per PR. Use the numeric field id from the Project field settings URL,
+      # or the GraphQL node id directly (PVTF_*). You MUST create this
+      # variable yourself; there is no fallback value — leaving it unset
+      # will prevent thread reuse from working correctly.
+      GITHUB_PROJECT_THREAD_FIELD_ID: ${{ vars.CLIQ_THREAD_FIELD_ID }}
+
+      # USER CONFIG (variable): CLIQ_PROJECT_NUMBER — REQUIRED, no default.
+      # The GitHub Project (v2) number that PRs get logged into for thread
+      # reuse. Find it in your project's URL:
+      #   https://github.com/orgs/<orgname>/projects/1
+      #                                              ^-- this is the number
+      # (org-owned projects) or https://github.com/users/<username>/projects/1
+      # (user-owned projects). You MUST create this variable yourself; there
+      # is no fallback value.
+      GITHUB_PROJECT_NUMBER: ${{ vars.CLIQ_PROJECT_NUMBER }}
+
+      # ---------------------------------------------------------------------
+      # (C) In-file workflow inputs — edit these directly in this file.
+      # Plain, non-sensitive values (not secrets, not repo/org variables).
+      # ---------------------------------------------------------------------
+
+      # USER CONFIG (in-file): AI_REVIEW_ENABLED
+      # true  -> AI review gate runs on every PR (open/reopen, and sync if
+      #          ai-review-on-sync is true further below).
+      # false -> AI review step and its checks are skipped entirely.
+      AI_REVIEW_ENABLED: true
+
+      # USER CONFIG (in-file): AI_REVIEW_SERVICE
+      # Which AI provider to call. Supported: openai | claude | gemini.
+      # The matching API key must be stored in the AI_REVIEW_TOKEN
+      # Environment secret (see cliq-production environment secrets above).
+      AI_REVIEW_SERVICE: openai
+
+      # USER CONFIG (in-file): AI_REVIEW_MODEL
+      # Model name for the chosen AI_REVIEW_SERVICE above. Leave blank ("")
+      # to fall back to that provider's default model:
+      #   openai -> gpt-4.1-mini | claude -> claude-3-5-sonnet-latest | gemini -> gemini-1.5-pro
+      AI_REVIEW_MODEL: gpt-4.1-mini
     steps:
+      # ---------------------------------------------------------------------
+      # (B) Environment SECRETS — required, must be set on the protected
+      # "cliq-production" Environment (Settings -> Environments -> cliq-production
+      # -> Environment secrets), not as plain repo secrets.
+      # ---------------------------------------------------------------------
       - name: Validate project token
         shell: bash
         env:
+          # USER CONFIG (environment secret): PROJECT_TOKEN
+          # Classic GitHub PAT with `repo` + `project` scopes. Used for all
+          # GitHub Projects (v2) GraphQL calls (lookup/insert PR into project).
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
         run: |
           if [[ -z "$PROJECT_TOKEN" ]]; then
@@ -102,6 +201,8 @@ jobs:
         id: prepare-cliq-endpoint
         shell: bash
         env:
+          # USER CONFIG (environment secret): ENDPOINT
+          # The Zoho Cliq incoming webhook URL that notifications are posted to.
           RAW_CLIQ_ENDPOINT: ${{ secrets.ENDPOINT }}
         run: |
           mode=$(printf '%s' "$CLIQ_NOTIFICATION_MODE" | tr '[:upper:]' '[:lower:]')
@@ -142,6 +243,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request_target' }}
         shell: bash
         env:
+          # PROJECT_TOKEN: see "USER CONFIG (environment secret)" note above.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           CLIQ_THREAD_STORAGE_MODE: project
           GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}
@@ -184,10 +286,13 @@ jobs:
         if: ${{ github.event_name == 'pull_request_target' }}
         shell: bash
         env:
+          # PROJECT_TOKEN: see "USER CONFIG (environment secret)" note above.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}
         run: |
           owner="$GITHUB_PROJECT_OWNER"
+          # number here comes from the GITHUB_PROJECT_NUMBER env var
+          # (USER CONFIG variable: CLIQ_PROJECT_NUMBER, defined above).
           number="$GITHUB_PROJECT_NUMBER"
 
           echo "DebugLookup: owner=$owner number=$number"
@@ -228,6 +333,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request_target' }}
         shell: bash
         env:
+          # PROJECT_TOKEN: see "USER CONFIG (environment secret)" note above.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -298,10 +404,11 @@ jobs:
           echo "PR inserted into project table successfully."
 
       - if: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' }}
-        uses: Lincy-Zoho/GitHub-Informer-New@v3
+        uses: Lincy-Zoho/GitHub-Informer-New@v4.4
         env:
           # Use workflow token for repo/PR APIs; use PROJECT_TOKEN only for ProjectV2 operations.
           GITHUB_TOKEN: ${{ github.token }}
+          # PROJECT_TOKEN: see "USER CONFIG (environment secret)" note above.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           # Previous mode (PR marker comment storage):
           # CLIQ_THREAD_STORAGE_MODE: comment
@@ -348,11 +455,109 @@ jobs:
           #set-message-if-none: true
           #false makes GitHub-Informer not send the default messages if custom message is not set
 
+      - name: Resolve AI review provider endpoint
+        id: resolve-ai-review-provider
+        if: ${{ github.event_name == 'pull_request_target' && env.AI_REVIEW_ENABLED == 'true' }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          AI_REVIEW_SERVICE: ${{ env.AI_REVIEW_SERVICE }}
+          AI_REVIEW_MODEL: ${{ env.AI_REVIEW_MODEL }}
+          # USER CONFIG (environment secret): AI_REVIEW_TOKEN
+          # API key for the provider set in AI_REVIEW_SERVICE above. Required
+          # only when AI_REVIEW_ENABLED is true. Its format is validated below
+          # (sk- for OpenAI, sk-ant- for Claude, AIza for Gemini).
+          AI_REVIEW_TOKEN: ${{ secrets.AI_REVIEW_TOKEN }}
+        run: |
+          # Posts a comment on the PR so the user is notified directly where
+          # they'll actually see it, instead of only failing silently in the
+          # Action run logs.
+          post_pr_comment() {
+            local body="$1"
+            local escaped_body
+            escaped_body=$(printf '%s' "$body" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))' 2>/dev/null)
+            if [[ -z "$escaped_body" ]]; then
+              # Fallback if python3 is unavailable: minimal manual JSON escaping.
+              escaped_body=$(printf '%s' "$body" | sed 's/\\/\\\\/g; s/"/\\"/g' | awk 'BEGIN{ORS="\\n"} {print}')
+              escaped_body="\"$escaped_body\""
+            fi
+            curl -sS -o /dev/null \
+              -X POST "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"body\": $escaped_body}"
+          }
+
+          service=$(printf '%s' "$AI_REVIEW_SERVICE" | tr '[:upper:]' '[:lower:]' | xargs)
+
+          # 1. AI_REVIEW_TOKEN missing/empty -> comment on PR and fail.
+          if [[ -z "$AI_REVIEW_TOKEN" ]]; then
+            post_pr_comment "### :warning: AI Review Gate — Action Required
+          AI review is **enabled** (\`AI_REVIEW_ENABLED: true\`) in \`CliqConnector.yml\`, but no \`AI_REVIEW_TOKEN\` secret has been configured.
+
+          **To fix:** add a repository/organization secret named \`AI_REVIEW_TOKEN\` containing a valid API key for the configured service (\`AI_REVIEW_SERVICE: $AI_REVIEW_SERVICE\`), or set \`AI_REVIEW_ENABLED: false\` in \`CliqConnector.yml\` if AI review is not needed."
+            echo "::error::AI_REVIEW_TOKEN secret is missing/empty while AI_REVIEW_ENABLED=true."
+            exit 1
+          fi
+
+          case "$service" in
+            openai)
+              api_url="https://api.openai.com/v1/chat/completions"
+              default_model="gpt-4.1-mini"
+              token_pattern='^sk-'
+              expected_hint="OpenAI keys typically start with 'sk-'."
+              ;;
+            claude)
+              api_url="https://api.anthropic.com/v1/messages"
+              default_model="claude-3-5-sonnet-latest"
+              token_pattern='^sk-ant-'
+              expected_hint="Anthropic (Claude) keys typically start with 'sk-ant-'."
+              ;;
+            gemini)
+              api_url="https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent"
+              default_model="gemini-1.5-pro"
+              token_pattern='^AIza'
+              expected_hint="Google Gemini keys typically start with 'AIza'."
+              ;;
+            *)
+              # 2. Invalid/unsupported AI_REVIEW_SERVICE -> comment on PR and fail.
+              post_pr_comment "### :warning: AI Review Gate — Action Required
+          \`AI_REVIEW_SERVICE: $AI_REVIEW_SERVICE\` in \`CliqConnector.yml\` is not a supported value.
+
+          **To fix:** set \`AI_REVIEW_SERVICE\` to one of: \`openai\`, \`claude\`, \`gemini\`."
+              echo "::error::Unsupported AI_REVIEW_SERVICE '$AI_REVIEW_SERVICE'. Use one of: openai, claude, gemini."
+              exit 1
+              ;;
+          esac
+
+          # 3. Token shape doesn't match the declared service -> comment on PR and fail.
+          if ! printf '%s' "$AI_REVIEW_TOKEN" | grep -qE "$token_pattern"; then
+            post_pr_comment "### :warning: AI Review Gate — Action Required
+          \`AI_REVIEW_SERVICE: $service\` is configured in \`CliqConnector.yml\`, but the \`AI_REVIEW_TOKEN\` secret does not look like a valid $service key. $expected_hint
+
+          **To fix:** update the \`AI_REVIEW_TOKEN\` secret with a valid $service API key, or change \`AI_REVIEW_SERVICE\` in \`CliqConnector.yml\` to match the provider the current token belongs to."
+            echo "::error::AI_REVIEW_TOKEN does not match the expected format for AI_REVIEW_SERVICE '$service'."
+            exit 1
+          fi
+
+          # Empty AI_REVIEW_MODEL -> fall back to the provider's latest default model.
+          model="${AI_REVIEW_MODEL:-$default_model}"
+          if [[ -z "$(printf '%s' "$AI_REVIEW_MODEL" | xargs)" ]]; then
+            model="$default_model"
+          fi
+
+          echo "api-url=$api_url" >> "$GITHUB_OUTPUT"
+          echo "model=$model" >> "$GITHUB_OUTPUT"
+
       - if: ${{ github.event_name == 'pull_request_target' }}
-        uses: Lincy-Zoho/GitHub-Informer-New@v3
+        uses: Lincy-Zoho/GitHub-Informer-New@v4.4
         env:
           # Use workflow token for repo/PR APIs; use PROJECT_TOKEN only for ProjectV2 operations.
           GITHUB_TOKEN: ${{ github.token }}
+          # PROJECT_TOKEN: see "USER CONFIG (environment secret)" note above.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           # Previous mode (PR marker comment storage):
           # CLIQ_THREAD_STORAGE_MODE: comment
@@ -365,17 +570,19 @@ jobs:
           PULL_REQUEST_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         with:
           channel-endpoint: ${{ steps.prepare-cliq-endpoint.outputs.resolved-endpoint }}
-          ai-review-enabled: true
+          # AI_REVIEW_ENABLED: see "USER CONFIG (in-file)" note above (env block).
+          ai-review-enabled: ${{ env.AI_REVIEW_ENABLED }}
           ai-review-trigger: auto
           ai-review-on-sync: true
           ai-review-check-name: AI Review Gate
+          # ai-review-token: see "USER CONFIG (environment secret): AI_REVIEW_TOKEN" note above.
           ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}
+          # Resolved above from AI_REVIEW_SERVICE (openai | claude | gemini) —
+          # see "USER CONFIG (in-file): AI_REVIEW_SERVICE" note above.
+          ai-review-api-url: ${{ steps.resolve-ai-review-provider.outputs.api-url }}
+          ai-review-model: ${{ steps.resolve-ai-review-provider.outputs.model }}
           # Diff URL from the PR event, used to fetch the latest patch reliably.
           # This should be read by the action from the event environment.
-          # Optional overrides per provider:
-          # OpenAI  -> ai-review-api-url: https://api.openai.com/v1/chat/completions
-          # Claude  -> ai-review-api-url: https://api.anthropic.com/v1/messages
-          # Gemini  -> ai-review-api-url: https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent
 
       - name: Ensure AI Review Gate check is reported
         if: ${{ github.event_name == 'pull_request_target' }}
