@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitLab Cliq Notifier - Customer Setup Guide</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --ink: #16213a;
+      --muted: #4a5a77;
+      --accent: #0a7ea4;
+      --accent-soft: #e3f4f9;
+      --ok: #156f3d;
+      --warn: #7c4d00;
+      --border: #d9e2ee;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Trebuchet MS", Tahoma, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 10%, #d9f2ff 0%, transparent 35%),
+        radial-gradient(circle at 90% 0%, #fff3d3 0%, transparent 30%),
+        var(--bg);
+      line-height: 1.55;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 28px 18px 54px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #0a7ea4 0%, #0c5f9f 55%, #18438e 100%);
+      color: #fff;
+      border-radius: 18px;
+      padding: 28px 24px;
+      box-shadow: 0 14px 34px rgba(10, 80, 130, 0.24);
+      animation: rise 0.55s ease-out both;
+    }
+
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.5rem, 2.6vw, 2.3rem);
+      letter-spacing: 0.2px;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 800px;
+      opacity: 0.96;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+      margin-top: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      animation: rise 0.65s ease-out both;
+    }
+
+    .badge {
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+    }
+
+    .section {
+      margin-top: 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: 0 8px 18px rgba(22, 33, 58, 0.05);
+      animation: rise 0.75s ease-out both;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 1.18rem;
+      color: #113369;
+    }
+
+    ul {
+      margin: 8px 0 0 18px;
+      padding: 0;
+    }
+
+    li {
+      margin: 4px 0;
+    }
+
+    pre {
+      background: #0c1b2f;
+      color: #e7f0ff;
+      border-radius: 12px;
+      padding: 14px;
+      overflow-x: auto;
+      margin: 10px 0 0;
+      border: 1px solid #16355f;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92rem;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--accent-soft);
+      color: #0f375a;
+    }
+
+    .ok {
+      color: var(--ok);
+      font-weight: 600;
+    }
+
+    .warn {
+      color: var(--warn);
+      font-weight: 600;
+    }
+
+    .footer {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>GitLab Cliq Notifier - Customer Setup Guide</h1>
+      <p>
+        This guide helps your team enable Zoho Cliq notifications from GitLab pipelines
+        in under 10 minutes.
+      </p>
+      <div class="grid">
+        <div class="badge">Reusable include template</div>
+        <div class="badge">Supports user and bot mode</div>
+        <div class="badge">Optional AI merge request review</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>1) Add Include to Your Repository</h2>
+      <p>Add this in your repository root <code>.gitlab-ci.yml</code>:</p>
+      <pre><code>include:
+  - project: 'your-group/gitlab-cliq-notifier'
+    ref: main
+    file: 'templates/cliq-notify.yml'</code></pre>
+      <p class="warn">Replace <code>your-group/gitlab-cliq-notifier</code> with your actual GitLab path.</p>
+    </section>
+
+    <section class="section">
+      <h2>2) Configure CI/CD Variables</h2>
+      <p class="ok">Important: these settings are already defined in the shared template YAML under <code>variables:</code>.</p>
+      <p>You can keep template defaults, or override any value per repository using GitLab CI/CD Variables.</p>
+      <p><strong>Minimum required variables for current defaults:</strong> <code>AI_REVIEW_TOKEN</code>, <code>ENDPOINT</code>, <code>GITLAB_TOKEN</code>.</p>
+      <p>Go to <strong>Settings &gt; CI/CD &gt; Variables</strong> and add:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Variable</th>
+              <th>Required</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>ENDPOINT</code></td>
+              <td class="ok">Yes</td>
+              <td>Zoho Cliq channel webhook URL including <code>?zapikey=&lt;token&gt;</code>.</td>
+            </tr>
+            <tr>
+              <td><code>CUSTOM_MESSAGE</code></td>
+              <td>No</td>
+              <td>Custom message template. Leave as <code>_+_</code> to use default auto message.</td>
+            </tr>
+            <tr>
+              <td><code>CLIQ_NOTIFICATION_MODE</code></td>
+              <td>No</td>
+              <td><code>user</code> (default) or <code>bot</code>.</td>
+            </tr>
+            <tr>
+              <td><code>CLIQ_BOT_UNIQUE_NAME</code></td>
+              <td>Only if bot mode</td>
+              <td>Mandatory when <code>CLIQ_NOTIFICATION_MODE=bot</code>.</td>
+            </tr>
+            <tr>
+              <td><code>CLIQ_BOT_DISPLAY_NAME</code></td>
+              <td>No</td>
+              <td>Display name shown in Cliq for bot posts.</td>
+            </tr>
+            <tr>
+              <td><code>CLIQ_BOT_IMAGE_URL</code></td>
+              <td>No</td>
+              <td>Avatar URL shown in Cliq for bot posts.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>3) Optional: Enable AI MR Review</h2>
+      <p>If you want automated merge request review comments, set:</p>
+      <ul>
+        <li><code>AI_REVIEW_ENABLED=true</code></li>
+        <li><code>AI_REVIEW_TOKEN</code> (provider token or API key)</li>
+        <li><code>AI_REVIEW_SERVICE</code> = <code>openai</code>, <code>gemini</code>, or <code>claude</code> (alias: <code>anthropic</code>)</li>
+        <li><code>AI_REVIEW_MODEL</code> (exact model name)</li>
+        <li><code>AI_REVIEW_API_URL</code> (provider endpoint URL)</li>
+        <li><code>GITLAB_TOKEN</code> (with <code>api</code> scope for MR comments)</li>
+      </ul>
+      <p class="warn">If any required AI variable is missing, the pipeline fails fast with a clear message.</p>
+      <p class="ok">Template defaults already include <code>AI_REVIEW_SERVICE</code>, <code>AI_REVIEW_MODEL</code>, and <code>AI_REVIEW_API_URL</code>. Update in YAML or override in CI/CD variables.</p>
+    </section>
+
+    <section class="section">
+      <h2>4) Events That Trigger Notifications</h2>
+      <ul>
+        <li>Push to default branch</li>
+        <li>Merge request event</li>
+        <li>Scheduled pipeline</li>
+      </ul>
+      <p>If needed, your team can override the included job rules in your own <code>.gitlab-ci.yml</code>.</p>
+    </section>
+
+    <section class="section">
+      <h2>5) Custom Message Placeholders</h2>
+      <p>Use these placeholders in <code>CUSTOM_MESSAGE</code>:</p>
+      <ul>
+        <li><code>(me)</code> - linked GitLab username</li>
+        <li><code>(repo)</code> - linked project name</li>
+        <li><code>(event)</code> - event label</li>
+        <li><code>(ref)</code> - branch or tag link</li>
+        <li><code>(pull)</code> - merge request title link</li>
+        <li><code>(sha)</code> - short commit SHA</li>
+      </ul>
+      <pre><code>Example:
+(me) pushed to (ref) in (repo) [commit: (sha)]</code></pre>
+    </section>
+
+    <section class="section">
+      <h2>6) Validation Checklist</h2>
+      <ul>
+        <li>Pipeline runs without variable errors</li>
+        <li>Cliq message appears in target channel</li>
+        <li>Bot mode works (if configured)</li>
+        <li>AI MR review comment appears (if enabled)</li>
+      </ul>
+    </section>
+
+    <p class="footer">
+      Support note: Keep this file as a customer handout. It is standalone and can be shared directly.
+    </p>
+  </div>
+</body>
+</html>
