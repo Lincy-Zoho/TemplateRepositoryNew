@@ -218,27 +218,8 @@
     </section>
 
     <section class="section">
-      <div class="eyebrow">Setup Flow</div>
-      <h2>Quick Overview: Steps To Go Live</h2>
-      <ol>
-        <li>Add the workflow file (copy <code>CliqConnector.yml</code>) to <code>.github/workflows/</code> in the consuming repository. No separate branch needs to be created for this.</li>
-        <li>Set the four configuration <strong>Variables</strong> (<code>CLIQ_NOTIFICATION_MODE</code>, <code>CLIQ_BOT_UNIQUE_NAME</code>, <code>CLIQ_PROJECT_NUMBER</code>, <code>CLIQ_THREAD_FIELD_ID</code>) under <code>Settings → Secrets and variables → Actions → Variables</code>, only if you need bot mode or project thread reuse — all are optional with safe defaults.</li>
-        <li>Create a protected <strong>Environment</strong> (e.g. <code>cliq-production</code>) and add <code>ENDPOINT</code>, <code>PROJECT_TOKEN</code>, and (if AI review is enabled) <code>AI_REVIEW_TOKEN</code> as <strong>Environment secrets</strong>. The AI provider endpoint and model are plain workflow inputs, not secrets.</li>
-        <li>Run the workflow once on a real pull request so GitHub registers the <code>ai-review-check-name</code> check context.</li>
-        <li>Add that exact check name as a required status check in Branch Protection or Rules.</li>
-        <li>Push a new commit (or re-run) so the newly required check is enforced going forward.</li>
-      </ol>
-      <div class="note">
-        <code>GITHUB_TOKEN</code> is provided automatically by GitHub Actions for every run — it is never configured manually as a secret.
-      </div>
-    </section>
-
-    <section class="section">
       <div class="eyebrow">Setup</div>
       <h2>Required Secrets and Variables</h2>
-      <div class="note">
-        <code>ENDPOINT</code>, <code>PROJECT_TOKEN</code>, and <code>AI_REVIEW_TOKEN</code> should be stored as <strong>Environment secrets</strong> inside a protected environment (e.g. <code>cliq-production</code>) so only Admins/required reviewers can view or edit them — not as plain repository secrets. See the main README's "Add Secrets via a Protected Environment" section for full setup steps.
-      </div>
       <table>
         <thead>
           <tr>
@@ -251,42 +232,105 @@
           <tr>
             <td><code>ENDPOINT</code></td>
             <td>Environment secret</td>
-            <td>Cliq channel endpoint with <code>?zapikey=...</code></td>
-          </tr>
-          <tr>
-            <td><code>PROJECT_TOKEN</code></td>
-            <td>Environment secret</td>
-            <td>Classic GitHub PAT for Project V2 operations. Required scopes: <code>repo</code>, <code>project</code>, and optionally <code>read:org</code> for org-owned projects.</td>
+            <td>Cliq channel endpoint with <code>?zapikey=...</code>. Must be created in the <code>cliq-production</code> environment unless the workflow environment name is changed.</td>
           </tr>
           <tr>
             <td><code>AI_REVIEW_TOKEN</code></td>
             <td>Environment secret</td>
-            <td>Token for OpenAI, Claude, or Gemini if AI review is enabled.</td>
+            <td>API token for the selected AI provider when AI review is enabled. Must also live in the <code>cliq-production</code> environment by default.</td>
+          </tr>
+          <tr>
+            <td><code>PROJECT_TOKEN</code></td>
+            <td>Environment secret</td>
+            <td>Classic GitHub PAT used for Project V2 operations. Required for thread storage mode and stored in the <code>cliq-production</code> environment.</td>
+          </tr>
+          <tr>
+            <td><code>CLIQ_THREAD_STORAGE_MODE</code></td>
+            <td>Repository variable</td>
+            <td>Set to <code>project</code> when thread reuse is enabled.</td>
+          </tr>
+          <tr>
+            <td><code>GITHUB_PROJECT_OWNER</code></td>
+            <td>Repository variable</td>
+            <td>GitHub org or user that owns the Project V2.</td>
+          </tr>
+          <tr>
+            <td><code>PROJECT_NUMBER</code></td>
+            <td>Repository variable</td>
+            <td>Required only for thread reply mode. GitHub Project V2 number used to resolve the PR item.</td>
+          </tr>
+          <tr>
+            <td><code>PROJECT_THREAD_FIELD_ID</code></td>
+            <td>Repository variable</td>
+            <td>Required only for thread reply mode. Custom Project field ID used to store the Cliq thread ID.</td>
           </tr>
           <tr>
             <td><code>CLIQ_NOTIFICATION_MODE</code></td>
-            <td>Variable or YAML value</td>
-            <td><code>user</code> or <code>bot</code></td>
+            <td>Repository variable</td>
+            <td>Set to <code>user</code> or <code>bot</code>.</td>
           </tr>
           <tr>
             <td><code>CLIQ_BOT_UNIQUE_NAME</code></td>
-            <td>Variable or YAML value</td>
-            <td>Required only for bot mode.</td>
+            <td>Repository variable</td>
+            <td>Required only when mode is <code>bot</code>.</td>
           </tr>
           <tr>
-            <td><code>CLIQ_PROJECT_NUMBER</code></td>
-            <td>Variable — <strong>required, no default</strong></td>
-            <td>GitHub Project V2 number, e.g. the <code>1</code> in <code>https://github.com/orgs/&lt;orgname&gt;/projects/1</code>. Maps internally to <code>GITHUB_PROJECT_NUMBER</code> in the workflow env. You must create this variable yourself.</td>
+            <td><code>AI_REVIEW_ENABLED</code></td>
+            <td>Repository variable</td>
+            <td>Must be created before the workflow is triggered.</td>
           </tr>
           <tr>
-            <td><code>CLIQ_THREAD_FIELD_ID</code></td>
-            <td>Variable — <strong>required, no default</strong></td>
-            <td>Project field identifier or GraphQL field node id used to store the Cliq thread id. Maps internally to <code>GITHUB_PROJECT_THREAD_FIELD_ID</code> in the workflow env. You must create this variable yourself.</td>
+            <td><code>AI_REVIEW_SERVICE</code></td>
+            <td>Repository variable</td>
+            <td>Required for the AI review flow, for example <code>openai</code>, <code>claude</code>, or <code>gemini</code>.</td>
+          </tr>
+          <tr>
+            <td><code>AI_REVIEW_MODEL</code></td>
+            <td>Repository variable</td>
+            <td>Required for the AI review flow and must match the selected provider.</td>
           </tr>
         </tbody>
       </table>
       <div class="note">
-        Note: the four names above (<code>CLIQ_NOTIFICATION_MODE</code>, <code>CLIQ_BOT_UNIQUE_NAME</code>, <code>CLIQ_PROJECT_NUMBER</code>, <code>CLIQ_THREAD_FIELD_ID</code>) are the <strong>GitHub Actions Variable</strong> names you set once under <code>Settings → Secrets and variables → Actions → Variables</code>. The workflow reads them via <code>vars.*</code> and passes them into the action under slightly different internal env names (shown above) — you never need to edit <code>CliqConnector.yml</code> to set these.
+        This workflow expects the environment secrets under the GitHub environment named <code>cliq-production</code>. If a different environment name is used, the workflow environment name must be changed in the YAML to match it. The values referenced as <code>${{ vars.* }}</code> must be created in GitHub under Settings → Secrets and variables → Actions → Variables. Runtime values such as <code>github.repository_owner</code>, <code>github.repository</code>, and <code>github.event.pull_request.number</code> are read from GitHub automatically and should not be manually added by the user.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">Workflow Placement</div>
+      <h2>Where to add the workflow file</h2>
+      <p>Create the workflow in your consuming repository at:</p>
+      <pre><code>.github/workflows/CliqConnector.yml</code></pre>
+      <p>If the <code>.github/workflows</code> folder does not exist, create it first. This is the path GitHub reads when it looks for workflow files.</p>
+      <p>The reusable action source code is in the public action repository here:</p>
+      <pre><code>https://github.com/Lincy-Zoho/GitHub-Informer-New/blob/main/src/GitHub_Informer_New.java</code></pre>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">Configuration Rules</div>
+      <h2>Strict Setup Model</h2>
+      <ol>
+        <li><strong>Environment secrets:</strong> <code>ENDPOINT</code>, <code>AI_REVIEW_TOKEN</code>, and <code>PROJECT_TOKEN</code>. By default these are created in the GitHub environment named <code>cliq-production</code>.</li>
+        <li><strong>Automatic GitHub token:</strong> <code>GITHUB_TOKEN</code> is provided by GitHub runtime and does not need to be configured manually.</li>
+        <li><strong>Repository variables:</strong> use all app-level values such as <code>CLIQ_NOTIFICATION_MODE</code>, <code>CLIQ_BOT_UNIQUE_NAME</code>, <code>CLIQ_THREAD_STORAGE_MODE</code>, <code>GITHUB_PROJECT_OWNER</code>, <code>PROJECT_NUMBER</code>, <code>PROJECT_THREAD_FIELD_ID</code>, <code>AI_REVIEW_ENABLED</code>, <code>AI_REVIEW_SERVICE</code>, and <code>AI_REVIEW_MODEL</code>.</li>
+        <li><strong>Do not hardcode these values in the workflow YAML.</strong> Read them from repo variables or environment secrets instead.</li>
+      </ol>
+      <div class="note">
+        Normal channel reply mode does not require the project number or thread field ID. Thread reply mode does require both. If the action is posting to a normal Cliq channel instead of reusing a thread, the GitHub Project settings are not needed. The repository variables for AI review are mandatory before the workflow is triggered.
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">First-Time Setup</div>
+      <h2>Correct Order for a New Repository</h2>
+      <ol>
+        <li>Add the required repo variables and secrets.</li>
+        <li>Commit and push the workflow file.</li>
+        <li>Run the workflow once so the status check is created in GitHub.</li>
+        <li>Then add the branch protection or ruleset and require the AI Review Gate check.</li>
+      </ol>
+      <div class="note">
+        This order matters because GitHub cannot enforce a required status check before that check has been created by the workflow. The required status check is configured in GitHub <strong>Rules / Branch Protection</strong>, not in the workflow YAML or repository variables.
       </div>
     </section>
 
@@ -323,7 +367,7 @@
   CLIQ_NOTIFICATION_MODE: ${{ vars.CLIQ_NOTIFICATION_MODE || 'user' }}
   CLIQ_BOT_UNIQUE_NAME: ${{ vars.CLIQ_BOT_UNIQUE_NAME || '' }}</code></pre>
       <div class="note">
-        Recommended approach: use GitHub Variables for <code>CLIQ_NOTIFICATION_MODE</code> and <code>CLIQ_BOT_UNIQUE_NAME</code>, because users can change them without editing the workflow file.
+        Recommended approach: use GitHub Variables for <code>CLIQ_NOTIFICATION_MODE</code> and <code>CLIQ_BOT_UNIQUE_NAME</code>. For a normal channel reply, <code>PROJECT_NUMBER</code> and <code>PROJECT_THREAD_FIELD_ID</code> are not required. For a thread reply, both are required.
       </div>
     </section>
 
@@ -360,52 +404,6 @@ githubnotification</code></pre>
 
     <section class="section">
       <div class="eyebrow">AI Review</div>
-      <h2>Enabling the AI Service Model</h2>
-      <p>AI review is <strong>off by default</strong>. To turn it on, set the <code>ai-review-enabled</code> workflow input to <code>true</code> and configure a provider, token, and model. The provider (OpenAI, Claude, or Gemini) is not a separate setting &mdash; it is chosen via the <code>ai-review-api-url</code>/<code>ai-review-model</code> you pick together with the matching token.</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Input</th>
-            <th>Purpose</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><code>ai-review-enabled</code></td>
-            <td>Set to <code>true</code> to turn on the AI review gate for pull requests.</td>
-          </tr>
-          <tr>
-            <td><code>ai-review-token</code></td>
-            <td>AI provider token, backed by an <strong>Environment secret</strong> (not a repository secret), e.g. <code>${{ secrets.AI_REVIEW_TOKEN }}</code>.</td>
-          </tr>
-          <tr>
-            <td><code>ai-review-api-url</code></td>
-            <td>Endpoint for the chosen provider (OpenAI, Claude, or Gemini).</td>
-          </tr>
-          <tr>
-            <td><code>ai-review-model</code></td>
-            <td>Model name to use, e.g. <code>gpt-4.1-mini</code>, <code>claude-3-5-sonnet-latest</code>, or <code>gemini-1.5-pro</code>. Falls back to a per-service default if omitted.</td>
-          </tr>
-        </tbody>
-      </table>
-      <pre><code>with:
-  ai-review-enabled: true
-  ai-review-token: ${{ secrets.AI_REVIEW_TOKEN }}
-  ai-review-api-url: https://api.openai.com/v1/chat/completions
-  ai-review-model: gpt-4.1-mini</code></pre>
-      <h3 style="margin-top:16px;">Optional: Enable via Config File Instead</h3>
-      <p>If you'd rather toggle AI review from a plain file than from workflow inputs, set <code>ai-review-config-file</code> to a path in your repo and add an <code>ai_review:</code> block:</p>
-      <pre><code>ai_review:
-  enabled: true
-  service: openai   # openai | claude | gemini
-  model: gpt-4.1-mini   # optional</code></pre>
-      <div class="note">
-        When the config file and its <code>ai_review</code> block are found, <code>enabled</code> and <code>service</code> from the file take precedence over the <code>ai-review-enabled</code> workflow input and automatic provider detection. The AI token is still never read from this file &mdash; it always comes from the <code>ai-review-token</code> input.
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="eyebrow">AI Review</div>
       <h2>AI Review Gate Flow</h2>
       <ol>
         <li>The workflow runs AI review on <code>pull_request_target</code>.</li>
@@ -416,11 +414,10 @@ githubnotification</code></pre>
       </ol>
       <h3 style="margin-top:16px;">Required Status Check Setup</h3>
       <ol>
-        <li>Set the workflow input <code>ai-review-check-name</code> to the desired check name (defaults to <code>AI Review Gate</code> if not set).</li>
-        <li>Run the workflow once on a PR so GitHub registers the check context.</li>
+        <li>Set the workflow input <code>ai-review-check-name</code> to the desired check name.</li>
+        <li>Run the workflow once on a PR.</li>
         <li>In GitHub Rules or Branch Protection, enable <strong>Require status checks to pass</strong>.</li>
         <li>Add the exact same check name as a required check.</li>
-        <li>Push a new commit or re-run the workflow so the newly required check is picked up.</li>
       </ol>
       <div class="note">
         Exact name matching matters. If the required check name and the workflow check name differ, GitHub shows <strong>Waiting for status to be reported</strong>.
@@ -438,6 +435,130 @@ githubnotification</code></pre>
         <li>Save or reuse the PR thread id.</li>
         <li>Run AI Review Gate and publish the status check.</li>
       </ol>
+    </section>
+
+    <section class="section">
+      <div class="eyebrow">Reusable Template</div>
+      <h2>Project Template File</h2>
+      <p>The reusable CI template lives in <code>templates/cliq-notify.yml</code> and is included from a consuming repo using the standard GitLab include pattern.</p>
+      <pre><code># .gitlab-ci.yml (in the consuming repository)
+include:
+  - project: 'your-group/gitlab-cliq-notifier'
+    ref: main
+    file: 'templates/cliq-notify.yml'</code></pre>
+
+      <pre><code># templates/cliq-notify.yml
+# Reusable GitLab CI template for Zoho Cliq notifications.
+# Java source is fetched at runtime from GitHub-Informer-New (single source of truth).
+#
+# ── HOW TO USE IN A CONSUMING REPO ────────────────────────────────────────────
+#
+#   .gitlab-ci.yml (in your project repo):
+#
+#     include:
+#       - project: 'your-group/gitlab-cliq-notifier'
+#         ref: main
+#         file: 'templates/cliq-notify.yml'
+#
+#   Then set these CI/CD Variables in Settings → CI/CD → Variables:
+#
+#   Required:
+#     ENDPOINT               Cliq channel URL + ?zapikey=&lt;token&gt;
+#
+#   Optional:
+#     CLIQ_NOTIFICATION_MODE  user (default) or bot
+#     CLIQ_BOT_UNIQUE_NAME    Required when mode is bot
+#     CUSTOM_MESSAGE          Custom message text, or _+_ for auto-generated
+#     AI_REVIEW_TOKEN         API token/key for the chosen AI_REVIEW_SERVICE — OpenAI key,
+#                               Gemini API key, or Anthropic key (required if AI_REVIEW_ENABLED=true)
+#     AI_REVIEW_ENABLED       true to enable AI MR review gate
+#     AI_REVIEW_SERVICE       REQUIRED if AI_REVIEW_ENABLED=true. No default — must be filled in.
+#     AI_REVIEW_MODEL         REQUIRED if AI_REVIEW_ENABLED=true. No default — must be filled in.
+#     AI_REVIEW_API_URL       REQUIRED if AI_REVIEW_ENABLED=true. No default — must be filled in.
+#     GITLAB_TOKEN            Project/Personal Access Token with 'api' scope (for MR comments)
+#
+stages:
+  - notify
+
+cliq-notify:
+  stage: notify
+  image: eclipse-temurin:19-jdk
+
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+
+  variables:
+    CUSTOM_MESSAGE: "_+_"
+    CLIQ_NOTIFICATION_MODE: "user"
+    CLIQ_BOT_UNIQUE_NAME: ""
+    CLIQ_BOT_DISPLAY_NAME: "GitLab Informer for Zoho Cliq"
+    CLIQ_BOT_IMAGE_URL: "https://workdrive.zohoexternal.com/external/a55ce4b1d1b64d36de31b77b6067d0a74b47b8733459390605c849bc880b05e8/download?directDownload=true"
+    CLIQ_INFORMER_REF: "main"
+    CLIQ_JAVA_SOURCE_REPO: "cliq-gitlab-informer/gitlab-cliq-java-source"
+    AI_REVIEW_ENABLED: "true"
+    AI_REVIEW_SERVICE: "gemini"
+    AI_REVIEW_MODEL: "gemini-2.0-flash"
+    AI_REVIEW_API_URL: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git
+    - git clone --depth 1 --branch "$CLIQ_INFORMER_REF"
+        https://gitlab.com/${CLIQ_JAVA_SOURCE_REPO}.git /tmp/cliq-informer
+    - mkdir -p /tmp/cliq-informer/out
+    - javac /tmp/cliq-informer/src/GitLab_Cliq_Informer.java -d /tmp/cliq-informer/out
+
+    - |
+      if [[ "$(echo "${AI_REVIEW_ENABLED:-false}" | tr '[:upper:]' '[:lower:]')" == "true" ]]; then
+        missing=()
+        [[ -z "$AI_REVIEW_TOKEN" ]]     && missing+=("AI_REVIEW_TOKEN")
+        [[ -z "$AI_REVIEW_SERVICE" ]]   && missing+=("AI_REVIEW_SERVICE")
+        [[ -z "$AI_REVIEW_MODEL" ]]     && missing+=("AI_REVIEW_MODEL")
+        [[ -z "$AI_REVIEW_API_URL" ]]   && missing+=("AI_REVIEW_API_URL")
+        if [[ ${#missing[@]} -gt 0 ]]; then
+          echo "ERROR: AI_REVIEW_ENABLED=true but the following required CI/CD variables are not set:"
+          for m in "${missing[@]}"; do echo "  - $m"; done
+          exit 1
+        fi
+
+        service_lc=$(echo "$AI_REVIEW_SERVICE" | tr '[:upper:]' '[:lower:]' | xargs)
+        case "$service_lc" in
+          openai|gemini|claude|anthropic)
+            ;;
+          *)
+            echo "ERROR: AI_REVIEW_SERVICE=\"$AI_REVIEW_SERVICE\" is not a supported value."
+            exit 1
+            ;;
+        esac
+      fi
+
+    - |
+      if [[ -z "$ENDPOINT" ]]; then
+        echo "ERROR: ENDPOINT CI/CD variable is not set."
+        exit 1
+      fi
+      mode=$(echo "${CLIQ_NOTIFICATION_MODE:-user}" | tr '[:upper:]' '[:lower:]')
+      if [[ "$mode" == "bot" ]]; then
+        if [[ -z "$CLIQ_BOT_UNIQUE_NAME" ]]; then
+          echo "ERROR: CLIQ_BOT_UNIQUE_NAME is required when CLIQ_NOTIFICATION_MODE=bot."
+          exit 1
+        fi
+        if [[ "$ENDPOINT" == *"?"* ]]; then
+          export RESOLVED_ENDPOINT="$ENDPOINT&bot_unique_name=$CLIQ_BOT_UNIQUE_NAME"
+        else
+          export RESOLVED_ENDPOINT="$ENDPOINT?bot_unique_name=$CLIQ_BOT_UNIQUE_NAME"
+        fi
+      else
+        export RESOLVED_ENDPOINT="$ENDPOINT"
+      fi
+
+  script:
+    - java -cp /tmp/cliq-informer/out GitLab_Cliq_Informer "$RESOLVED_ENDPOINT"</code></pre>
+
+      <div class="note">
+        This pattern keeps the reusable logic in one template file, while each consuming project only needs to include it and define the required CI/CD variables such as <code>ENDPOINT</code> and <code>AI_REVIEW_TOKEN</code>.
+      </div>
     </section>
 
     <section class="section">
