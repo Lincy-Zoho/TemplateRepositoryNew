@@ -4,42 +4,42 @@ name : Communicating with Cliq
 # CliqConnector.yml — Zoho Cliq notification + AI PR review workflow
 #
 # This file is meant to be copied as-is into the consuming repository at
-# .github/workflows/CliqConnector.yml. No values need to be edited directly
-# in this file except the three AI_REVIEW_* lines noted below (optional).
+# .github/workflows/CliqConnector.yml.
+#
+# Strict configuration model:
+#   - All non-secret configuration values MUST be stored in repository/org
+#     Variables (Settings -> Secrets and variables -> Actions -> Variables).
+#   - No non-secret value should be hardcoded in this file.
+#   - Only the following are stored as environment secrets:
+#       - PROJECT_TOKEN
+#       - ENDPOINT
+#       - AI_REVIEW_TOKEN
+#       - GITHUB_TOKEN (provided automatically by GitHub Actions)
 #
 # USER-CONFIGURABLE FIELDS — where each one is set:
 #
 #   A) Repo/Org Variables  (Settings -> Secrets and variables -> Actions -> Variables)
-#      OR typed directly in the yml below (see the `||` fallback on each line
-#      in the `env:` block) — pick whichever you prefer per field:
-#        - CLIQ_NOTIFICATION_MODE   optional ("user" or "bot"; defaults to "user")
-#        - CLIQ_BOT_UNIQUE_NAME     required only when CLIQ_NOTIFICATION_MODE=bot
-#        - CLIQ_PROJECT_NUMBER      REQUIRED. GitHub Project (v2) number to log PR
+#        - CLIQ_NOTIFICATION_MODE    optional ("user" or "bot")
+#        - CLIQ_BOT_UNIQUE_NAME      required only when CLIQ_NOTIFICATION_MODE=bot
+#        - PROJECT_NUMBER            REQUIRED. GitHub Project (v2) number to log PR
 #                                    threads into; e.g. the "1" in
 #                                    https://github.com/orgs/<orgname>/projects/1
-#                                    Set as a repo/org Variable (recommended for
-#                                    public/shared repos), or type the number
-#                                    directly into the yml fallback below.
-#        - CLIQ_THREAD_FIELD_ID     REQUIRED. Numeric field id or PVTF_* node id
-#                                    for the Cliq-thread field. Same either/or
-#                                    choice as CLIQ_PROJECT_NUMBER above.
+#        - PROJECT_THREAD_FIELD_ID   REQUIRED. Numeric field id or PVTF_* node id
+#                                    for the Cliq-thread field.
+#        - AI_REVIEW_ENABLED         optional (true | false)
+#        - AI_REVIEW_SERVICE         optional when disabled; otherwise openai | claude | gemini
+#        - AI_REVIEW_MODEL           optional when disabled; model for the chosen service
 #
 #   B) Environment Secrets  (Settings -> Environments -> cliq-production -> Secrets)
 #      Required. Must live in the protected "cliq-production" environment,
-#      NOT as plain repo secrets, so only admins/approved reviewers can set them.
-#        - ENDPOINT           (Zoho Cliq incoming webhook URL)
+#      NOT as plain repo secrets.
 #        - PROJECT_TOKEN      (classic GitHub PAT with repo + project scopes)
-#        - AI_REVIEW_TOKEN    (API key for the AI provider below; required only
-#                              if AI_REVIEW_ENABLED is true)
+#        - ENDPOINT           (Zoho Cliq incoming webhook URL)
+#        - AI_REVIEW_TOKEN    (API key for the AI provider; required only if
+#                              AI_REVIEW_ENABLED is true)
+#        - GITHUB_TOKEN       (automatic GitHub Actions token)
 #
-#   C) In-file workflow inputs  (edit directly below, in the `env:` block of
-#      the `connecting_cliq` job). Plain values, not secrets:
-#        - AI_REVIEW_ENABLED   (true | false)
-#        - AI_REVIEW_SERVICE   (openai | claude | gemini)
-#        - AI_REVIEW_MODEL     (model name for the chosen service, or blank
-#                                for the provider's default)
-#
-#   D) One-time GitHub setup (no yml edits):
+#   C) One-time GitHub setup (no yml edits):
 #        - Run this workflow once on a real PR so the "AI Review Gate" check
 #          context is registered, then add it as a required status check in
 #          Branch Protection / Rules.
@@ -134,67 +134,56 @@ jobs:
       # Set at: Settings -> Secrets and variables -> Actions -> Variables tab.
       # ---------------------------------------------------------------------
 
-      # USER CONFIG (variable): CLIQ_NOTIFICATION_MODE
-      # Values: "user" (default here) or "bot". Use "bot" to post as a
-      # configured Cliq bot instead of the webhook's default identity.
-      CLIQ_NOTIFICATION_MODE: ${{ vars.CLIQ_NOTIFICATION_MODE || 'bot' }}
+      # USER CONFIG (environment secret): PROJECT_TOKEN
+      # Classic GitHub PAT with repo + project scopes. Used for all GitHub Projects (v2)
+      # GraphQL calls used to look up the project and store/update the PR thread reference.
+      PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
 
-      # USER CONFIG (variable): CLIQ_BOT_UNIQUE_NAME
+      # USER CONFIG (repository variable): CLIQ_NOTIFICATION_MODE
+      # Values: "user" or "bot". Use "bot" to post as a configured Cliq bot
+      # instead of the webhook's default identity.
+      CLIQ_NOTIFICATION_MODE: ${{ vars.CLIQ_NOTIFICATION_MODE }}
+
+      # USER CONFIG (repository variable): CLIQ_BOT_UNIQUE_NAME
       # Required ONLY when CLIQ_NOTIFICATION_MODE=bot above. Set it to the
       # bot's unique name so it gets appended to the endpoint as a query param.
-      CLIQ_BOT_UNIQUE_NAME: ${{ vars.CLIQ_BOT_UNIQUE_NAME || 'aiservicebot' }}
+      CLIQ_BOT_UNIQUE_NAME: ${{ vars.CLIQ_BOT_UNIQUE_NAME }}
 
-      # USER CONFIG (variable OR in-file): CLIQ_THREAD_FIELD_ID — REQUIRED.
+      # USER CONFIG (repository variable): PROJECT_THREAD_FIELD_ID — REQUIRED.
       # The GitHub Project (v2) field used to store the Cliq thread reference
       # per PR. Use the numeric field id from the Project field settings URL,
       # or the GraphQL node id directly (PVTF_*).
-      #
-      # Option 1 (recommended for public/shared repos): create a repo/org
-      #   Variable named CLIQ_THREAD_FIELD_ID — it takes precedence below.
-      # Option 2 (quick edit, private repos): leave the Variable unset and
-      #   replace the '' after the || with your field id directly, e.g.:
-      #   GITHUB_PROJECT_THREAD_FIELD_ID: ${{ vars.CLIQ_THREAD_FIELD_ID || 'PVTF_lADOAbC123' }}
-      # Leaving both the Variable and the fallback empty will prevent thread
-      # reuse from working correctly.
-      GITHUB_PROJECT_THREAD_FIELD_ID: ${{ vars.CLIQ_THREAD_FIELD_ID || '401236993' }}
+      PROJECT_THREAD_FIELD_ID: ${{ vars.PROJECT_THREAD_FIELD_ID }}
 
-      # USER CONFIG (variable OR in-file): CLIQ_PROJECT_NUMBER — REQUIRED.
+      # USER CONFIG (repository variable): PROJECT_NUMBER — REQUIRED.
       # The GitHub Project (v2) number that PRs get logged into for thread
       # reuse. Find it in your project's URL:
       #   https://github.com/orgs/<orgname>/projects/1
       #                                              ^-- this is the number
       # (org-owned projects) or https://github.com/users/<username>/projects/1
       # (user-owned projects).
-      #
-      # Option 1 (recommended for public/shared repos): create a repo/org
-      #   Variable named CLIQ_PROJECT_NUMBER — it takes precedence below.
-      # Option 2 (quick edit, private repos): leave the Variable unset and
-      #   replace the '' after the || with your project number directly, e.g.:
-      #   GITHUB_PROJECT_NUMBER: ${{ vars.CLIQ_PROJECT_NUMBER || '1' }}
-      GITHUB_PROJECT_NUMBER: ${{ vars.CLIQ_PROJECT_NUMBER || '1' }}
+      PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
 
       # ---------------------------------------------------------------------
-      # (C) In-file workflow inputs — edit these directly in this file.
-      # Plain, non-sensitive values (not secrets, not repo/org variables).
+      # Repository-variable configuration for AI review.
+      # No non-secret value is hardcoded in this file.
       # ---------------------------------------------------------------------
 
-      # USER CONFIG (in-file): AI_REVIEW_ENABLED
+      # USER CONFIG (repository variable): AI_REVIEW_ENABLED
       # true  -> AI review gate runs on every PR (open/reopen, and sync if
       #          ai-review-on-sync is true further below).
       # false -> AI review step and its checks are skipped entirely.
-      AI_REVIEW_ENABLED: true
+      AI_REVIEW_ENABLED: ${{ vars.AI_REVIEW_ENABLED }}
 
-      # USER CONFIG (in-file): AI_REVIEW_SERVICE
+      # USER CONFIG (repository variable): AI_REVIEW_SERVICE
       # Which AI provider to call. Supported: openai | claude | gemini.
       # The matching API key must be stored in the AI_REVIEW_TOKEN
       # Environment secret (see cliq-production environment secrets above).
-      AI_REVIEW_SERVICE: gemini
+      AI_REVIEW_SERVICE: ${{ vars.AI_REVIEW_SERVICE }}
 
-      # USER CONFIG (in-file): AI_REVIEW_MODEL
-      # Model name for the chosen AI_REVIEW_SERVICE above. Leave blank ("")
-      # to fall back to that provider's default model:
-      #   openai -> gpt-4.1-mini | claude -> claude-sonnet-5 | gemini -> gemini-2.5-flash  
-      AI_REVIEW_MODEL: gemini-2.5-flash
+      # USER CONFIG (repository variable): AI_REVIEW_MODEL
+      # Model name for the chosen AI_REVIEW_SERVICE above.
+      AI_REVIEW_MODEL: ${{ vars.AI_REVIEW_MODEL }}
     steps:
       # ---------------------------------------------------------------------
       # (B) Environment SECRETS — required, must be set on the protected
@@ -210,23 +199,21 @@ jobs:
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
         run: |
           if [[ -z "$PROJECT_TOKEN" ]]; then
-            echo "PROJECT_TOKEN secret is missing. Add a classic PAT with repo and project scopes."
+            echo "PROJECT_TOKEN is missing. Add it as an environment secret named PROJECT_TOKEN in Settings -> Environments -> cliq-production."
             exit 1
           fi
 
       - name: Validate project number and thread field id
         shell: bash
         run: |
-          if [[ -z "$GITHUB_PROJECT_NUMBER" ]]; then
-            echo "CLIQ_PROJECT_NUMBER is not set. Either create a repo/org Variable named"
-            echo "CLIQ_PROJECT_NUMBER, or edit CliqConnector.yml and put the project number"
-            echo "directly in the fallback: vars.CLIQ_PROJECT_NUMBER || '1'"
+          if [[ -z "$PROJECT_NUMBER" ]]; then
+            echo "PROJECT_NUMBER is not set. Create a repo/org Variable named"
+            echo "PROJECT_NUMBER with your GitHub Project V2 number."
             exit 1
           fi
-          if [[ -z "$GITHUB_PROJECT_THREAD_FIELD_ID" ]]; then
-            echo "CLIQ_THREAD_FIELD_ID is not set. Either create a repo/org Variable named"
-            echo "CLIQ_THREAD_FIELD_ID, or edit CliqConnector.yml and put the field id"
-            echo "directly in the fallback: vars.CLIQ_THREAD_FIELD_ID || 'PVTF_...'"
+          if [[ -z "$PROJECT_THREAD_FIELD_ID" ]]; then
+            echo "PROJECT_THREAD_FIELD_ID is not set. Create a repo/org Variable named"
+            echo "PROJECT_THREAD_FIELD_ID with your GitHub Project V2 field id."
             exit 1
           fi
 
@@ -276,10 +263,12 @@ jobs:
         if: ${{ github.event_name == 'pull_request_target' }}
         shell: bash
         env:
-          # PROJECT_TOKEN: see "USER CONFIG (environment secret)" note above.
+          # PROJECT_TOKEN is a protected environment secret, not a repo variable.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           CLIQ_THREAD_STORAGE_MODE: project
           GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+          PROJECT_THREAD_FIELD_ID: ${{ vars.PROJECT_THREAD_FIELD_ID }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           AI_REVIEW_CHECK_NAME: AI Review Gate
@@ -305,9 +294,9 @@ jobs:
           echo "Debug: ai_check_name=$AI_REVIEW_CHECK_NAME"
           echo "Debug: storage_mode=$CLIQ_THREAD_STORAGE_MODE"
           echo "Debug: project_owner=$GITHUB_PROJECT_OWNER"
-          echo "Debug: project_number=$GITHUB_PROJECT_NUMBER"
+          echo "Debug: project_number=$PROJECT_NUMBER"
           echo "Debug: project_id=<auto-resolve via owner+number>"
-          echo "Debug: project_field_identifier=$GITHUB_PROJECT_THREAD_FIELD_ID"
+          echo "Debug: project_field_identifier=$PROJECT_THREAD_FIELD_ID"
           echo "Debug: project_field_id=<auto-resolve by identifier or direct node id>"
           if [[ -n "$PROJECT_TOKEN" ]]; then
             echo "Debug: project_token_present=true"
@@ -319,14 +308,15 @@ jobs:
         if: ${{ github.event_name == 'pull_request_target' }}
         shell: bash
         env:
-          # PROJECT_TOKEN: see "USER CONFIG (environment secret)" note above.
+          # PROJECT_TOKEN is a protected environment secret, not a repo variable.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
         run: |
           owner="$GITHUB_PROJECT_OWNER"
-          # number here comes from the GITHUB_PROJECT_NUMBER env var
-          # (USER CONFIG variable: CLIQ_PROJECT_NUMBER, defined above).
-          number="$GITHUB_PROJECT_NUMBER"
+          # number here comes from the PROJECT_NUMBER env var
+          # (USER CONFIG variable: PROJECT_NUMBER, defined above).
+          number="$PROJECT_NUMBER"
 
           echo "DebugLookup: owner=$owner number=$number"
 
@@ -366,14 +356,15 @@ jobs:
         if: ${{ github.event_name == 'pull_request_target' }}
         shell: bash
         env:
-          # PROJECT_TOKEN: see "USER CONFIG (environment secret)" note above.
+          # PROJECT_TOKEN is a protected environment secret, not a repo variable.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO_NAME: ${{ github.event.repository.name }}
         run: |
           owner="$GITHUB_PROJECT_OWNER"
-          number="$GITHUB_PROJECT_NUMBER"
+          number="$PROJECT_NUMBER"
           pr="$PR_NUMBER"
           repo="$REPO_NAME"
 
@@ -437,17 +428,19 @@ jobs:
           echo "PR inserted into project table successfully."
 
       - if: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' }}
-        uses: Lincy-Zoho/GitHub-Informer-New@v5.6
+        uses: Lincy-Zoho/GitHub-Informer-New@v6.3.4
         env:
           # Use workflow token for repo/PR APIs; use PROJECT_TOKEN only for ProjectV2 operations.
           GITHUB_TOKEN: ${{ github.token }}
-          # PROJECT_TOKEN: see "USER CONFIG (environment secret)" note above.
+          # PROJECT_TOKEN is a protected environment secret, not a repo variable.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           # Previous mode (PR marker comment storage):
           # CLIQ_THREAD_STORAGE_MODE: comment
           CLIQ_THREAD_STORAGE_MODE: project
           # Auto mode: resolve project id by owner + number.
           GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+          PROJECT_THREAD_FIELD_ID: ${{ vars.PROJECT_THREAD_FIELD_ID }}
           # Auto mode: resolve field id by field name.
         with:
           channel-endpoint: ${{ steps.prepare-cliq-endpoint.outputs.resolved-endpoint }}
@@ -595,18 +588,36 @@ jobs:
           echo "api-url=$api_url" >> "$GITHUB_OUTPUT"
           echo "model=$model" >> "$GITHUB_OUTPUT"
 
+      - name: Debug PR metadata for AI review
+        if: ${{ github.event_name == 'pull_request_target' }}
+        shell: bash
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "event_action=${{ github.event.action }}"
+          echo "repository=${{ github.repository }}"
+          echo "repo_owner=${{ github.repository_owner }}"
+          echo "pr_number=${{ github.event.pull_request.number }}"
+          echo "pr_title=${{ github.event.pull_request.title }}"
+          echo "pr_url=${{ github.event.pull_request.html_url }}"
+          echo "diff_url=${{ github.event.pull_request.diff_url }}"
+          echo "base_sha=${{ github.event.pull_request.base.sha }}"
+          echo "head_sha=${{ github.event.pull_request.head.sha }}"
+          echo "token_present=${{ secrets.GITHUB_TOKEN != '' }}"
+
       - if: ${{ github.event_name == 'pull_request_target' }}
-        uses: Lincy-Zoho/GitHub-Informer-New@v5.6
+        uses: Lincy-Zoho/GitHub-Informer-New@v6.3.4
         env:
           # Use workflow token for repo/PR APIs; use PROJECT_TOKEN only for ProjectV2 operations.
           GITHUB_TOKEN: ${{ github.token }}
-          # PROJECT_TOKEN: see "USER CONFIG (environment secret)" note above.
+          # PROJECT_TOKEN is a protected environment secret, not a repo variable.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           # Previous mode (PR marker comment storage):
           # CLIQ_THREAD_STORAGE_MODE: comment
           CLIQ_THREAD_STORAGE_MODE: project
           # Auto mode: resolve project id by owner + number.
           GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+          PROJECT_THREAD_FIELD_ID: ${{ vars.PROJECT_THREAD_FIELD_ID }}
           # Auto mode: resolve field id by field name.
           PULL_REQUEST_DIFF_URL: ${{ github.event.pull_request.diff_url }}
           PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
