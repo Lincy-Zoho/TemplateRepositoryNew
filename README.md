@@ -49,7 +49,7 @@ This is not the display name. In Cliq, open the channel and go to Channel Action
 Look for the value labeled **Unique Name** in the channel details panel. This is the exact value used in the URL after `/channelsbyname/`.
 
 ```text
-Unique Name: githubreponotification
+Example Unique Name: githubreponotification
 ```
 
 So the endpoint becomes:
@@ -238,7 +238,7 @@ These are environment secrets, so the workflow job must declare `environment: cl
 
 The API key, endpoint, and model must all come from the same provider. For example, if you use a Claude key with the OpenAI endpoint, the request will fail with a `401` error. In practice, this often looks like a code review failure, but the real issue is usually a provider mismatch in the configuration.
 
-If the configured AI model, service, or token is invalid, the workflow adds a clear error message as a pull request comment so the problem is easier to diagnose quickly.
+If the configured AI model, service, or token is invalid, the workflow adds a clear error message as a pull request comment so the issue is easier to diagnose quickly.
 
 #### Provider settings summary
 
@@ -270,7 +270,7 @@ These are repository variables, not secrets, and they are not environment-scoped
 | `AI_REVIEW_SERVICE` | Yes | `openai`, `claude`, or `gemini` |
 | `AI_REVIEW_MODEL` | Yes | A model ID that belongs to the chosen service. See the table in section 3.2. |
 
-The three `AI_REVIEW_*` variables are read unconditionally, so they must exist even when `AI_REVIEW_ENABLED=false`. In that case, set `AI_REVIEW_SERVICE` and `AI_REVIEW_MODEL` to any valid value.
+The three `AI_REVIEW_*` variables are read unconditionally, so they must exist even when `AI_REVIEW_ENABLED=false`. In that case, set `AI_REVIEW_SERVICE` and `AI_REVIEW_MODEL` to valid values so the workflow can resolve the provider configuration without attempting an AI review.
 
 ---
 
@@ -386,6 +386,8 @@ Notes:
 6. If thread mode is enabled, confirm the project field is a `Text` field, the PAT is a classic PAT with `repo` and `project` scopes, and the PR is included in the project.
 7. Confirm the check name in the branch protection rule matches the value used in `ai-review-check-name` exactly.
 8. Confirm the AI provider values all come from the same service and the token matches the provider configuration.
+
+> Important: there are two enforcement layers. The Java action exits early when `AI_REVIEW_ENABLED=false`, but the workflow template also contains a safeguard step that creates a failed `AI Review Gate` check if the status is missing after a PR event. If AI review is disabled, this safeguard must also be skipped or the branch protection rule must not require the check.
 
 ### Final setup checklist
 
