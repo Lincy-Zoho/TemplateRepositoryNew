@@ -21,11 +21,13 @@ name : Communicating with Cliq
 #   A) Repo/Org Variables  (Settings -> Secrets and variables -> Actions -> Variables)
 #        - CLIQ_NOTIFICATION_MODE    optional ("user" or "bot")
 #        - CLIQ_BOT_UNIQUE_NAME      required only when CLIQ_NOTIFICATION_MODE=bot
-#        - PROJECT_NUMBER            REQUIRED. GitHub Project (v2) number to log PR
-#                                    threads into; e.g. the "1" in
-#                                    https://github.com/orgs/<orgname>/projects/1
-#        - PROJECT_THREAD_FIELD_ID   REQUIRED. Numeric field id or PVTF_* node id
-#                                    for the Cliq-thread field.
+#        - CLIQ_THREAD_STORAGE_MODE  optional ("comment" or "project")
+#                                    Use "project" only if you want PR thread reuse.
+#        - PROJECT_NUMBER            required only when CLIQ_THREAD_STORAGE_MODE=project;
+#                                    GitHub Project (v2) number to log PR threads into;
+#                                    e.g. the "1" in https://github.com/orgs/<orgname>/projects/1
+#        - PROJECT_THREAD_FIELD_ID   required only when CLIQ_THREAD_STORAGE_MODE=project;
+#                                    numeric field id or PVTF_* node id for the Cliq-thread field.
 #        - AI_REVIEW_ENABLED         optional (true | false)
 #        - AI_REVIEW_SERVICE         optional when disabled; otherwise openai | claude | gemini
 #        - AI_REVIEW_MODEL           optional when disabled; model for the chosen service
@@ -149,13 +151,21 @@ jobs:
       # bot's unique name so it gets appended to the endpoint as a query param.
       CLIQ_BOT_UNIQUE_NAME: ${{ vars.CLIQ_BOT_UNIQUE_NAME }}
 
-      # USER CONFIG (repository variable): PROJECT_THREAD_FIELD_ID — REQUIRED.
+      # USER CONFIG (repository variable): CLIQ_THREAD_STORAGE_MODE
+      # Optional. Set to "project" only when you want PR updates to keep the
+      # same Cliq thread using a GitHub Project V2 field. If it is not enabled,
+      # the workflow posts normal channel messages and does not store a thread ID.
+      CLIQ_THREAD_STORAGE_MODE: ${{ vars.CLIQ_THREAD_STORAGE_MODE }}
+
+      # USER CONFIG (repository variable): PROJECT_THREAD_FIELD_ID
+      # Required only when CLIQ_THREAD_STORAGE_MODE=project.
       # The GitHub Project (v2) field used to store the Cliq thread reference
       # per PR. Use the numeric field id from the Project field settings URL,
       # or the GraphQL node id directly (PVTF_*).
       PROJECT_THREAD_FIELD_ID: ${{ vars.PROJECT_THREAD_FIELD_ID }}
 
-      # USER CONFIG (repository variable): PROJECT_NUMBER — REQUIRED.
+      # USER CONFIG (repository variable): PROJECT_NUMBER
+      # Required only when CLIQ_THREAD_STORAGE_MODE=project.
       # The GitHub Project (v2) number that PRs get logged into for thread
       # reuse. Find it in your project's URL:
       #   https://github.com/orgs/<orgname>/projects/1
@@ -197,7 +207,13 @@ jobs:
           # Classic GitHub PAT with `repo` + `project` scopes. Used for all
           # GitHub Projects (v2) GraphQL calls (lookup/insert PR into project).
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          CLIQ_THREAD_STORAGE_MODE: ${{ vars.CLIQ_THREAD_STORAGE_MODE }}
         run: |
+          if [[ -z "${CLIQ_THREAD_STORAGE_MODE:-}" || "${CLIQ_THREAD_STORAGE_MODE}" != "project" ]]; then
+            echo "Skipping project token validation because CLIQ_THREAD_STORAGE_MODE is not set to project."
+            exit 0
+          fi
+
           if [[ -z "$PROJECT_TOKEN" ]]; then
             echo "PROJECT_TOKEN is missing. Add it as an environment secret named PROJECT_TOKEN in Settings -> Environments -> cliq-production."
             exit 1
@@ -205,7 +221,14 @@ jobs:
 
       - name: Validate project number and thread field id
         shell: bash
+        env:
+          CLIQ_THREAD_STORAGE_MODE: ${{ vars.CLIQ_THREAD_STORAGE_MODE }}
         run: |
+          if [[ -z "${CLIQ_THREAD_STORAGE_MODE:-}" || "${CLIQ_THREAD_STORAGE_MODE}" != "project" ]]; then
+            echo "Skipping project number and field validation because CLIQ_THREAD_STORAGE_MODE is not set to project."
+            exit 0
+          fi
+
           if [[ -z "$PROJECT_NUMBER" ]]; then
             echo "PROJECT_NUMBER is not set. Create a repo/org Variable named"
             echo "PROJECT_NUMBER with your GitHub Project V2 number."
@@ -265,7 +288,7 @@ jobs:
         env:
           # PROJECT_TOKEN is a protected environment secret, not a repo variable.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-          CLIQ_THREAD_STORAGE_MODE: project
+          CLIQ_THREAD_STORAGE_MODE: ${{ vars.CLIQ_THREAD_STORAGE_MODE }}
           GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}
           PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
           PROJECT_THREAD_FIELD_ID: ${{ vars.PROJECT_THREAD_FIELD_ID }}
@@ -428,15 +451,14 @@ jobs:
           echo "PR inserted into project table successfully."
 
       - if: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' }}
-        uses: Lincy-Zoho/GitHub-Informer-New@v6.3.4
+        uses: Lincy-Zoho/GitHub-Informer-New@v6.4
         env:
           # Use workflow token for repo/PR APIs; use PROJECT_TOKEN only for ProjectV2 operations.
           GITHUB_TOKEN: ${{ github.token }}
           # PROJECT_TOKEN is a protected environment secret, not a repo variable.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-          # Previous mode (PR marker comment storage):
-          # CLIQ_THREAD_STORAGE_MODE: comment
-          CLIQ_THREAD_STORAGE_MODE: project
+          # Keep this unset unless the user wants PR thread reuse via GitHub Project V2.
+          CLIQ_THREAD_STORAGE_MODE: ${{ vars.CLIQ_THREAD_STORAGE_MODE }}
           # Auto mode: resolve project id by owner + number.
           GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}
           PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
@@ -605,15 +627,14 @@ jobs:
           echo "token_present=${{ secrets.GITHUB_TOKEN != '' }}"
 
       - if: ${{ github.event_name == 'pull_request_target' }}
-        uses: Lincy-Zoho/GitHub-Informer-New@v6.3.4
+        uses: Lincy-Zoho/GitHub-Informer-New@v6.4 
         env:
           # Use workflow token for repo/PR APIs; use PROJECT_TOKEN only for ProjectV2 operations.
           GITHUB_TOKEN: ${{ github.token }}
           # PROJECT_TOKEN is a protected environment secret, not a repo variable.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
-          # Previous mode (PR marker comment storage):
-          # CLIQ_THREAD_STORAGE_MODE: comment
-          CLIQ_THREAD_STORAGE_MODE: project
+          # Keep this unset unless the user wants PR thread reuse via GitHub Project V2.
+          CLIQ_THREAD_STORAGE_MODE: ${{ vars.CLIQ_THREAD_STORAGE_MODE }}
           # Auto mode: resolve project id by owner + number.
           GITHUB_PROJECT_OWNER: ${{ github.repository_owner }}
           PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
