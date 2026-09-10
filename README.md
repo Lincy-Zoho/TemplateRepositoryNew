@@ -159,7 +159,7 @@ The workflow uses this token to authenticate the AI API request. Without it, the
 
 ## 4. How to configure environment variables
 
-**Where these go:** repository **Settings → Secrets and variables → Actions → Variables**.
+### **Where these go:** repository **Settings → Secrets and variables → Actions → Variables**.
 
 These are repository variables, not environment secrets, and they are not environment-scoped.
 
@@ -189,7 +189,7 @@ Both modes still use the same `ENDPOINT` secret. The only extra value needed in 
 
 In user mode, there is no extra configuration beyond the channel endpoint itself.
 
-The Cliq channel message is posted as the authenticated user, and the default bot name or thumbnail is configured in the workflow YAML if needed.
+The Cliq channel message is posted as the authenticated user, and the bot name or thumbnail is already configured in the workflow YAML, so no additional setup is required here.
 
 ### 4.3 If posting as a bot — getting the bot unique name
 
@@ -222,3 +222,73 @@ This is not necessarily the display name. It is the unique identifier that must 
 | Repository Variables | `CLIQ_BOT_UNIQUE_NAME` | `githubnotificationbot` |
 
 
+### 4.4 If posting PR updates into a thread
+
+Skip this section if you are fine with each pull request event being posted as a separate message in the channel.
+
+If you want all PR updates to continue in the same Cliq thread, set:
+
+`CLIQ_THREAD_STORAGE_MODE=project`
+
+Why this is needed:
+
+Each workflow run starts fresh and does not remember the previous message automatically. To continue replying in the same Cliq thread, the action must store the message ID from an earlier run and reuse it later. This is done by saving the thread ID in a custom text field on a GitHub Project V2 item.
+
+#### 4.4.a Steps to create the project and custom field
+
+1. Create or select a GitHub Project V2. Note the project number.
+   - Example: `https://github.com/orgs/<org-name>/projects/1` → `1` is the `PROJECT_NUMBER`.
+2. Make sure the project owner and the workflow owner are the same.
+3. Add a custom field of type `Text` to the project, for example `Cliq Thread ID`.
+4. Get the field identifier. Either of these values is accepted:
+   - the numeric ID visible in the field settings URL.
+     - Example: `https://github.com/orgs/<org-name>/projects/1/settings/fields/401236883` → `401236883` is the `PROJECT_THREAD_FIELD_ID`.
+   - the GraphQL node ID starting with `PVTF_`.
+5. Ensure pull requests are added to the project.
+
+### Check Once
+
+| Variable Type | Variable Name | Allowed Values |
+| --- | --- | --- |
+| Repository Variables | `CLIQ_THREAD_STORAGE_MODE` | `project` |
+| Repository Variables | `PROJECT_NUMBER` | `1` |
+| Repository Variables | `PROJECT_THREAD_FIELD_ID` | `401236883` |
+
+> When `CLIQ_THREAD_STORAGE_MODE=project`, also set `PROJECT_NUMBER` and `PROJECT_THREAD_FIELD_ID`.
+
+
+#### 4.5 AI Provider settings
+
+This section defines which AI provider the workflow should use when the AI review feature is enabled. The provider must match the token you created and the model you select; otherwise the review request will fail.
+
+### 4.5.a If `AI_REVIEW_ENABLED=true`
+
+When this variable is set to `true`, the workflow triggers the AI review check for the pull request. You must also configure both `AI_REVIEW_SERVICE` and `AI_REVIEW_MODEL`.
+
+| Provider | `AI_REVIEW_SERVICE` | `AI_REVIEW_MODEL` | `Reference` |
+| --- | --- | --- | --- |
+| OpenAI | `openai` | `gpt-4.1-mini / gpt-4.1 / gpt-4.1-nano` | [OpenAI](https://developers.openai.com/api/docs/models) |
+| Claude | `claude` | `claude-sonnet-5 / claude-opus-4-1 / claude-haiku-4-5` | [Claude](https://platform.claude.com/docs/en/models/overview) |
+| Gemini | `gemini` | `gemini-2.5-flash / gemini-2.5-pro / gemini-2.5-flash-lite` | [Gemini](https://ai.google.dev/gemini-api/docs/models) |
+
+> Current Claude model IDs are dateless, such as `claude-opus-5`, `claude-sonnet-5`, and `claude-haiku-4-5`. Legacy aliases like `claude-3-5-sonnet-latest` should not be used for new setups.
+
+### 4.5.b If `AI_REVIEW_ENABLED=false`
+
+When this variable is set to `false`, the workflow exits the AI review path before any diff fetch, AI API call, GitHub check creation, or PR comment is attempted. In practice, this means:
+
+- no diff is fetched
+- no AI API request is sent
+- no AI review GitHub status check is created
+- no AI review PR comment is posted
+- no AI review gate blocks the merge
+
+This is the intended "feature off" mode. If you want to disable AI review completely, set the variable to `false` and remove the AI Review Gate from the required status checks in GitHub branch protection or rulesets. Otherwise, GitHub can still block the merge even though the workflow is not running the AI review logic.
+
+### Check Once
+
+| Variable Type | Variable Name | Allowed Values |
+| --- | --- | --- |
+| Repository Variables | `AI_REVIEW_ENABLED` | `true / false` |
+| Repository Variables | `AI_REVIEW_SERVICE` | `openai / claude / gemini` |
+| Repository Variables | `AI_REVIEW_MODEL` | `gpt-4.1-mini / claude-sonnet-5 / gemini-2.5-flash` |
