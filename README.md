@@ -94,7 +94,7 @@ This complete string, including the `?zapikey=` part, is what you store as the `
 
 
 
-### Check Once
+### Required value for this step
 
 | Variable Type | Name | Allowed Value |
 | --- | --- | --- |
@@ -113,7 +113,7 @@ This complete string, including the `?zapikey=` part, is what you store as the `
 5. Copy the token and save it as the `PROJECT_TOKEN` environment secret.
 
 
-### Check Once
+### Required value for this step
 
 | Variable Type | Name | Allowed Value |
 | --- | --- | --- |
@@ -136,7 +136,7 @@ The workflow uses this token to authenticate the AI API request. Without it, the
 | Gemini | https://aistudio.google.com/app/apikey |
 
 
-### Check Once
+### Required value for this step
 
 | Variable Type | Name | Allowed Value |
 | --- | --- | --- |
@@ -174,7 +174,7 @@ Choose the mode based on who should appear as the sender of the notification:
 
 Use this setting in the GitHub repository variables:
 
-### Check Once
+### Required value for this step
 
 | Variable Type | Variable Name | Allowed Values |
 | --- | --- | --- |
@@ -215,7 +215,7 @@ This is not necessarily the display name. It is the unique identifier that must 
 9. Add the bot to the target channel. This is the most common bot-mode failure.
 10. Set the variable:
 
-### Check Once
+### Required value for this step
 
 | Variable Type | Variable Name | Allowed Values |
 | --- | --- | --- |
@@ -246,7 +246,7 @@ Each workflow run starts fresh and does not remember the previous message automa
    - the GraphQL node ID starting with `PVTF_`.
 5. Ensure pull requests are added to the project.
 
-### Check Once
+### Required values for this step
 
 | Variable Type | Variable Name | Allowed Values |
 | --- | --- | --- |
@@ -285,7 +285,7 @@ When this variable is set to `false`, the workflow exits the AI review path befo
 
 This is the intended "feature off" mode. If you want to disable AI review completely, set the variable to `false` and remove the AI Review Gate from the required status checks in GitHub branch protection or rulesets. Otherwise, GitHub can still block the merge even though the workflow is not running the AI review logic.
 
-### Check Once
+### Required values for this step
 
 | Variable Type | Variable Name | Allowed Values |
 | --- | --- | --- |
