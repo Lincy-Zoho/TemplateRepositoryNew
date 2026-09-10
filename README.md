@@ -154,3 +154,69 @@ The workflow uses this token to authenticate the AI API request. Without it, the
 | `ENDPOINT` | Yes | `https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx` |
 | `PROJECT_TOKEN` | Only if `CLIQ_THREAD_STORAGE_MODE=project` | `XXX_S7Up0fXXXXXXXX` |
 | `AI_REVIEW_TOKEN` | Only if `AI_REVIEW_ENABLED=true` | Provider API key for the selected AI service. |
+
+
+
+## 3. How to configure environment variables
+
+ **Where these go:** repository **Settings → Secrets and variables → Actions → Variables**.
+
+These are repository variables, not secrets, and they are not environment-scoped.
+
+### 3.1 Decide: post as a user or as a bot?
+
+Choose the mode based on who should appear as the sender of the notification:
+
+| Mode | Who the message appears to come from | Extra setup |
+| --- | --- | --- |
+| User (webhook) mode | The person who created the webhook | No bot setup needed |
+| Bot mode | A dedicated Cliq bot | Create the bot and add it to the channel |
+
+Use this setting in GitHub repository variables:
+
+### Check Once
+
+| Variable Type | Variable Name | Allowed Values|
+| --- | --- | --- |
+| Repository Variables | `CLIQ_NOTIFICATION_MODE` | `user / bot` |
+
+
+Use user mode when you want the fastest setup and do not mind the message appearing from the webhook creator. Use bot mode when you want a stable, shared sender for ongoing notifications, especially if the person creating the webhook leaves the team or the channel.
+
+Both modes still use the same `ENDPOINT` secret. The only extra value needed in bot mode is `CLIQ_BOT_UNIQUE_NAME`.
+
+### 3.2 If posting as a user
+
+In user mode, there is no extra configuration beyond the channel endpoint itself.
+
+The cliq channel message posted as user authentication with custom bot name and the custom bot thumbnail defaultly it was set in the yml file.
+
+### 2.4 If posting as a bot — getting the bot unique name
+
+1. Open Zoho Cliq.
+2. Click on your profile picture in the top-right corner.
+3. Select **Bots & Tools**.
+4. In the left sidebar, open **Integrations** and click **Bots**.
+5. Select the bot you created or want to use.
+6. While creating the bot, enable the required channel permissions so the bot can post messages in the target channel.
+7. Open the bot details panel and look for the **API Endpoint** value.
+8. The value after `/bots/` is the bot unique name.
+
+Example:
+
+`https://cliq.zoho.com/api/v2/bots/githubnotificationbot/message`
+
+The bot unique name is:
+
+`githubnotificationbot`
+
+This is not necessarily the display name. It is the unique identifier that must be added in `CLIQ_BOT_UNIQUE_NAME`.
+
+9. Add the bot to the target channel. This is the most common bot-mode failure.
+10. Set the variables:
+
+### Check Once
+
+| Variable Type | Variable Name | Allowed Values|
+| --- | --- | --- |
+| Repository Variables | `CLIQ_BOT_UNIQUE_NAME` | `githubnotificationbot` |
