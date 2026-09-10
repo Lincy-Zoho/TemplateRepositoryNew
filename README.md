@@ -20,22 +20,26 @@ The threading and AI review features are optional and independent. You can use n
 
 To configure this workflow correctly, follow these three steps in order:
 
-### Step 1: Set the environment secrets and repository variables
-### Step 2: Create the workflow and run it
-### Step 3: Set branch rules and required status checks, then validate with a PR
+#### Step 1: Set the environment secrets and repository variables
+#### Step 2: Create the workflow and run it
+#### Step 3: Set branch rules and required status checks, then validate with a PR
 
 
 ## 3. How to configure Environment secrets
 
 Go to your repository/organization and configure the required values.
 
-Open: GitHub → Settings → Environments → `cliq-production` → Secrets
+If there is no environment already created, create a new environment named `cliq-production` first. Then open:
 
-#### 3.1 ENDPOINT - The channel endpoint URL
+### GitHub → Settings → Environments → `cliq-production` → Secrets
+
+Add the required secrets under this environment.
+
+### 3.1 ENDPOINT - The channel endpoint URL
 
 All notifications are sent to a single URL: the channel endpoint. Its format is:
 
-```text
+```
 <region-base>/api/v2/channelsbyname/<CHANNEL_UNIQUE_NAME>/message?zapikey=<WEBHOOK_TOKEN>
 ```
 
