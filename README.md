@@ -202,11 +202,11 @@ The Cliq channel message is posted as the authenticated user, and the bot name o
 7. Open the bot details panel and look for the **API Endpoint** value.
 8. The value after `/bots/` is the bot unique name.
 
-Example:
+**Example:**
 
 `https://cliq.zoho.com/api/v2/bots/githubnotificationbot/message`
 
-The bot unique name is:
+**The bot unique name is:**
 
 `githubnotificationbot`
 
@@ -257,11 +257,11 @@ Each workflow run starts fresh and does not remember the previous message automa
 > When `CLIQ_THREAD_STORAGE_MODE=project`, also set `PROJECT_NUMBER` and `PROJECT_THREAD_FIELD_ID`.
 
 
-#### 4.5 AI Provider settings
+## 4.5 AI Provider settings
 
 This section defines which AI provider the workflow should use when the AI review feature is enabled. The provider must match the token you created and the model you select; otherwise the review request will fail.
 
-### 4.5.a If `AI_REVIEW_ENABLED=true`
+#### 4.5.a If `AI_REVIEW_ENABLED=true`
 
 When this variable is set to `true`, the workflow triggers the AI review check for the pull request. You must also configure both `AI_REVIEW_SERVICE` and `AI_REVIEW_MODEL`.
 
@@ -292,3 +292,33 @@ This is the intended "feature off" mode. If you want to disable AI review comple
 | Repository Variables | `AI_REVIEW_ENABLED` | `true / false` |
 | Repository Variables | `AI_REVIEW_SERVICE` | `openai / claude / gemini` |
 | Repository Variables | `AI_REVIEW_MODEL` | `gpt-4.1-mini / claude-sonnet-5 / gemini-2.5-flash` |
+
+
+## Environment variables check
+
+| Variable name | Required | Allowed values |
+| --- | --- | --- |
+| `CLIQ_NOTIFICATION_MODE` | Yes | `user` or `bot` |
+| `CLIQ_BOT_UNIQUE_NAME` | Only if mode is `bot` | `githubnotificationbot`. Lower-case, no spaces. |
+| `CLIQ_THREAD_STORAGE_MODE` | Yes | `project` for per-PR threads |
+| `PROJECT_NUMBER` | Only if thread mode is `project` | Integer value from the project URL, for example `7`. |
+| `PROJECT_THREAD_FIELD_ID` | Only if thread mode is `project` | Numeric field ID from the field settings URL `401236883` |
+| `AI_REVIEW_ENABLED` | Yes | `true` or `false` |
+| `AI_REVIEW_SERVICE` | Yes | `openai`, `claude`, or `gemini` |
+| `AI_REVIEW_MODEL` | Yes | A model ID that belongs to the chosen service. See the table in section 4.5.a |
+
+
+## 5. Create the workflow file
+
+Use the GitHub Actions UI to create the workflow instead of creating files manually in the repository.
+
+1. Open the target repository on GitHub.
+2. Go to **Actions**.
+3. Click **New workflow**.
+4. Choose **Set up a workflow yourself**.
+5. Name the workflow file as `CliqConnector.yml`.
+6. Copy the workflow content from the template [repository](https://github.com/Lincy-Zoho/TemplateRepositoryNew)
+7. Click **Commit changes...** to save the workflow.
+8. Commit the changes to the branch you are using. Once the workflow is committed, GitHub Actions will automatically trigger the workflow run.
+
+Template repository: [https://github.com/Lincy-Zoho/TemplateRepositoryNew](https://github.com/Lincy-Zoho/TemplateRepositoryNew)
