@@ -451,7 +451,7 @@ jobs:
           echo "PR inserted into project table successfully."
 
       - if: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' }}
-        uses: Lincy-Zoho/GitHub-Informer-New@v6.4
+        uses: Lincy-Zoho/GitHub-Informer-New@v6.4.3
         env:
           # Use workflow token for repo/PR APIs; use PROJECT_TOKEN only for ProjectV2 operations.
           GITHUB_TOKEN: ${{ github.token }}
@@ -627,10 +627,14 @@ jobs:
           echo "token_present=${{ secrets.GITHUB_TOKEN != '' }}"
 
       - if: ${{ github.event_name == 'pull_request_target' }}
-        uses: Lincy-Zoho/GitHub-Informer-New@v6.4 
+        uses: Lincy-Zoho/GitHub-Informer-New@v6.4.3
         env:
           # Use workflow token for repo/PR APIs; use PROJECT_TOKEN only for ProjectV2 operations.
           GITHUB_TOKEN: ${{ github.token }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
+          PULL_REQUEST_TITLE: ${{ github.event.pull_request.title }}
+          PULL_REQUEST_BODY: ${{ github.event.pull_request.body }}
+          PULL_REQUEST_URL: ${{ github.event.pull_request.html_url }}
           # PROJECT_TOKEN is a protected environment secret, not a repo variable.
           PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           # Keep this unset unless the user wants PR thread reuse via GitHub Project V2.
@@ -664,6 +668,21 @@ jobs:
           ai-review-model: ${{ steps.resolve-ai-review-provider.outputs.model }}
           # Diff URL from the PR event, used to fetch the latest patch reliably.
           # This should be read by the action from the event environment.
+
+      - name: Comment PR on Cliq failure
+        if: ${{ failure() && github.event_name == 'pull_request_target' && github.event.pull_request.number != '' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments \
+            -f body='### ⚠️ Cliq notification failed
+
+          The workflow failed while posting to Cliq.
+
+          Reason:
+          - `bot_not_member`
+
+          Please verify the bot membership in the Cliq channel, bot configuration, and webhook/channel permissions.'
 
       - name: Ensure AI Review Gate check is reported
         if: ${{ github.event_name == 'pull_request_target' }}
