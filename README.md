@@ -25,11 +25,11 @@ To configure this workflow correctly, follow these three steps in order:
 #### Step 3: Set branch rules and required status checks, then validate with a PR
 
 
-## 3. How to configure Environment secrets
+## 3. How to configure environment secrets
 
-Go to your repository/organization and configure the required values.
+Go to your repository or organization and configure the required values.
 
-If there is no environment already created, create a new environment named `cliq-production` first. Then open:
+If no environment exists, create a new environment named `cliq-production` first. Then open:
 
 #### GitHub → Settings → Environments → `cliq-production` → Secrets
 
@@ -59,7 +59,7 @@ If you are unsure, check the address bar in your browser while using Cliq.
 
 #### 3.1.b. Channel unique name
 
-This is not the display name. In Cliq, open the channel and go to Channel Actions or Info. The unique name is shown there.
+This is not the display name. In Cliq, open the channel and go to **Channel Actions** or **Info**. The unique name is shown there.
 
 Look for the value labeled **Unique Name** in the channel details panel. This is the exact value used in the URL after `/channelsbyname/`.
 
@@ -120,27 +120,37 @@ This complete string, including the `?zapikey=` part, is what you store as the `
 | Environment Secrets | `PROJECT_TOKEN` | `XXX_S7Up0fXXXXXXXX` |
 
 
-> Treat this value as a credential. Anyone who has it can able to access your project.
+> Treat this value as a credential. Anyone who has it can access your project.
 
 
 ### 3.3 AI_REVIEW_TOKEN for PR AI Review Gate
 
 The workflow uses this token to authenticate the AI API request. Without it, the action cannot fetch the model output, cannot create the review result, and cannot post the status or PR comment.
 
-#### 3.3.a Get the API token
+#### 3.3.a Generate the API token
 
 | Service | Token generation URL |
 | --- | --- |
-| openai | https://platform.openai.com/api-keys |
-| claude | https://console.anthropic.com/settings/keys |
-| gemini | https://aistudio.google.com/app/apikey |
+| OpenAI | https://platform.openai.com/api-keys |
+| Claude | https://console.anthropic.com/settings/keys |
+| Gemini | https://aistudio.google.com/app/apikey |
 
 
 ### Check Once
 
 | Variable Type | Name | Allowed Value |
 | --- | --- | --- |
-| Environment Secrets | `AI_REVIEW_TOKEN` | `sk- , sk-ant- , AIza` |
+| Environment Secrets | `AI_REVIEW_TOKEN` | `sk- / sk-ant / AIza` |
 
 
-> Treat this value as a credential. Anyone who has it can able to access your AI service.
+> Treat this value as a credential. Anyone who has it can access your AI service.
+
+
+
+## Environment secrets check
+
+| Secret name | Required | Allowed value |
+| --- | --- | --- |
+| `ENDPOINT` | Yes | `https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx` |
+| `PROJECT_TOKEN` | Only if `CLIQ_THREAD_STORAGE_MODE=project` | `XXX_S7Up0fXXXXXXXX` |
+| `AI_REVIEW_TOKEN` | Only if `AI_REVIEW_ENABLED=true` | Provider API key for the selected AI service. |
