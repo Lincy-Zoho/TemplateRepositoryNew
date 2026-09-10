@@ -125,9 +125,7 @@ This complete string, including the `?zapikey=` part, is what you store as the `
 
 ### 3.3 AI_REVIEW_TOKEN for PR AI Review Gate
 
-This token is required only when `AI_REVIEW_ENABLED=true`. It allows the workflow to send the pull request diff to the selected AI provider so the review can be generated and reported back as a GitHub status check.
-
-In simple terms, the workflow uses this token to authenticate the AI API request. Without it, the action cannot fetch the model output, cannot create the review result, and cannot post the status or PR comment.
+The workflow uses this token to authenticate the AI API request. Without it, the action cannot fetch the model output, cannot create the review result, and cannot post the status or PR comment.
 
 #### 3.3.a Get the API token
 
@@ -136,5 +134,13 @@ In simple terms, the workflow uses this token to authenticate the AI API request
 | openai | https://platform.openai.com/api-keys |
 | claude | https://console.anthropic.com/settings/keys |
 | gemini | https://aistudio.google.com/app/apikey |
+
+
+### Check Once
+
+| Variable Type | Name | Allowed Value |
+| --- | --- | --- |
+| Environment Secrets | `AI_REVIEW_TOKEN` | `sk- , sk-ant- , AIza` |
+
 
 > Treat this value as a credential. Anyone who has it can able to access your AI service.
