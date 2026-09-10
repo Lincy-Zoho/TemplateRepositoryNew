@@ -322,3 +322,21 @@ Use the GitHub Actions UI to create the workflow instead of creating files manua
 8. Commit the changes to the branch you are using. Once the workflow is committed, GitHub Actions will automatically trigger the workflow run.
 
 Template repository: [https://github.com/Lincy-Zoho/TemplateRepositoryNew](https://github.com/Lincy-Zoho/TemplateRepositoryNew)
+
+
+## 6. Now branch protection
+
+Order matters here. GitHub cannot require a status check that has never been reported, so the workflow must run once before the branch rule can reference it.
+
+1. Open or update a pull request so the workflow fires.
+2. Check the **Actions** tab for the run result and confirm the message arrived in the expected Cliq channel.
+3. Only after that, go to **Settings → Rules** (or **Branches → branch protection rule**).
+4. Enable **Require status checks to pass**.
+5. Add the check name exactly as set in `ai-review-check-name` — default is `AI Review Gate`.
+
+Notes:
+
+- Name matching is literal. Any mismatch leaves pull requests stuck on **Waiting for status to be reported**. After renaming the check, push a commit or re-run checks once so the new context is registered.
+- Protecting all branches does not by itself make AI review block anything. The check only blocks merges where it is listed as a required status check.
+- Recommended approach: protect only the release branches (`main`, `master`, or `release`) and keep AI review as PR-level validation elsewhere.
+- In practice, add the pre-live branches that should gate deployments before code moves forward, such as `main`, `master`, and `release`, to the branch protection rule so the workflow runs and enforces the check before merge.
