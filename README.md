@@ -92,14 +92,16 @@ Assembled example:
 
 This complete string, including the `?zapikey=` part, is what you store as the `ENDPOINT` secret.
 
-> Treat this value as a credential. Anyone who has it can post to the channel.
 
 
-##Check Once
+## Check Once
 
 | Variable Type | Name | Allowed Value |
 | --- | --- | --- |
 | Environment Secrets | `ENDPOINT` | `https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx` |
+
+
+> Treat this value as a credential. Anyone who has it can post to the channel.
 
 
 ### 3.2 Creating the classic PAT for `PROJECT_TOKEN`
@@ -116,3 +118,6 @@ This complete string, including the `?zapikey=` part, is what you store as the `
 | Variable Type | Name | Allowed Value |
 | --- | --- | --- |
 | Environment Secrets | `PROJECT_TOKEN` | `XXX_S7Up0fXXXXXXXX` |
+
+
+> Treat this value as a credential. Anyone who has it can able to access your project.
