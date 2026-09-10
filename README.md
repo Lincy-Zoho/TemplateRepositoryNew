@@ -31,7 +31,7 @@ Go to your repository/organization and configure the required values.
 
 If there is no environment already created, create a new environment named `cliq-production` first. Then open:
 
-### GitHub → Settings → Environments → `cliq-production` → Secrets
+#### GitHub → Settings → Environments → `cliq-production` → Secrets
 
 Add the required secrets under this environment.
 
@@ -39,7 +39,7 @@ Add the required secrets under this environment.
 
 All notifications are sent to a single URL: the channel endpoint. Its format is:
 
-```
+```text
 <region-base>/api/v2/channelsbyname/<CHANNEL_UNIQUE_NAME>/message?zapikey=<WEBHOOK_TOKEN>
 ```
 
