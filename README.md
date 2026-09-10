@@ -39,9 +39,7 @@ Add the required secrets under this environment.
 
 All notifications are sent to a single URL: the channel endpoint. Its format is:
 
-```text
-<region-base>/api/v2/channelsbyname/<CHANNEL_UNIQUE_NAME>/message?zapikey=<WEBHOOK_TOKEN>
-```
+`<region-base>/api/v2/channelsbyname/<CHANNEL_UNIQUE_NAME>/message?zapikey=<WEBHOOK_TOKEN>`
 
 Three parts need to be filled in:
 
@@ -65,15 +63,11 @@ This is not the display name. In Cliq, open the channel and go to Channel Action
 
 Look for the value labeled **Unique Name** in the channel details panel. This is the exact value used in the URL after `/channelsbyname/`.
 
-```text
-Example Unique Name: githubreponotification
-```
+`Example Unique Name: githubreponotification`
 
 So the endpoint becomes:
 
-```text
-https://cliq.zoho.com/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx
-```
+`https://cliq.zoho.com/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx`
 
 The part after `/channelsbyname/` must match the channel's unique name exactly.
 
@@ -94,14 +88,31 @@ After the token is created, copy the generated webhook token and combine it with
 
 Assembled example:
 
-```text
-https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx
-```
+`https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx`
 
 This complete string, including the `?zapikey=` part, is what you store as the `ENDPOINT` secret.
 
 > Treat this value as a credential. Anyone who has it can post to the channel.
 
+
+##Check Once
+
 | Variable Type | Name | Allowed Value |
 | --- | --- | --- |
 | Environment Secrets | `ENDPOINT` | `https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx` |
+
+
+### 3.2 Creating the classic PAT for `PROJECT_TOKEN`
+
+1. Go to **GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)**. [Link](https://github.com/settings/tokens)
+2. Click **Generate new token (classic)**.
+3. Set an **expiry date**. Choose a short duration and plan to rotate it before expiry. Do not create a non-expiring token.
+4. Select the scopes: **`repo`** and **`project`**.
+5. Copy the token and save it as the `PROJECT_TOKEN` environment secret.
+
+
+##Check Once
+
+| Variable Type | Name | Allowed Value |
+| --- | --- | --- |
+| Environment Secrets | `PROJECT_TOKEN` | `XXX_S7Up0fXXXXXXXX` |
