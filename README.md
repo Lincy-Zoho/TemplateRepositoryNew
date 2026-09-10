@@ -157,13 +157,13 @@ The workflow uses this token to authenticate the AI API request. Without it, the
 
 
 
-## 3. How to configure environment variables
+## 4. How to configure environment variables
 
- **Where these go:** repository **Settings → Secrets and variables → Actions → Variables**.
+**Where these go:** repository **Settings → Secrets and variables → Actions → Variables**.
 
-These are repository variables, not secrets, and they are not environment-scoped.
+These are repository variables, not environment secrets, and they are not environment-scoped.
 
-### 3.1 Decide: post as a user or as a bot?
+### 4.1 Decide: post as a user or as a bot?
 
 Choose the mode based on who should appear as the sender of the notification:
 
@@ -172,26 +172,26 @@ Choose the mode based on who should appear as the sender of the notification:
 | User (webhook) mode | The person who created the webhook | No bot setup needed |
 | Bot mode | A dedicated Cliq bot | Create the bot and add it to the channel |
 
-Use this setting in GitHub repository variables:
+Use this setting in the GitHub repository variables:
 
 ### Check Once
 
-| Variable Type | Variable Name | Allowed Values|
+| Variable Type | Variable Name | Allowed Values |
 | --- | --- | --- |
-| Repository Variables | `CLIQ_NOTIFICATION_MODE` | `user / bot` |
+| Repository Variables | `CLIQ_NOTIFICATION_MODE` | `user` or `bot` |
 
 
-Use user mode when you want the fastest setup and do not mind the message appearing from the webhook creator. Use bot mode when you want a stable, shared sender for ongoing notifications, especially if the person creating the webhook leaves the team or the channel.
+Use user mode when you want the fastest setup and do not mind the message appearing to come from the webhook creator. Use bot mode when you want a stable, shared sender for ongoing notifications, especially if the person creating the webhook leaves the team or the channel.
 
 Both modes still use the same `ENDPOINT` secret. The only extra value needed in bot mode is `CLIQ_BOT_UNIQUE_NAME`.
 
-### 3.2 If posting as a user
+### 4.2 If posting as a user
 
 In user mode, there is no extra configuration beyond the channel endpoint itself.
 
-The cliq channel message posted as user authentication with custom bot name and the custom bot thumbnail defaultly it was set in the yml file.
+The Cliq channel message is posted as the authenticated user, and the default bot name or thumbnail is configured in the workflow YAML if needed.
 
-### 2.4 If posting as a bot — getting the bot unique name
+### 4.3 If posting as a bot — getting the bot unique name
 
 1. Open Zoho Cliq.
 2. Click on your profile picture in the top-right corner.
@@ -210,13 +210,15 @@ The bot unique name is:
 
 `githubnotificationbot`
 
-This is not necessarily the display name. It is the unique identifier that must be added in `CLIQ_BOT_UNIQUE_NAME`.
+This is not necessarily the display name. It is the unique identifier that must be added to `CLIQ_BOT_UNIQUE_NAME`.
 
 9. Add the bot to the target channel. This is the most common bot-mode failure.
-10. Set the variables:
+10. Set the variable:
 
 ### Check Once
 
-| Variable Type | Variable Name | Allowed Values|
+| Variable Type | Variable Name | Allowed Values |
 | --- | --- | --- |
 | Repository Variables | `CLIQ_BOT_UNIQUE_NAME` | `githubnotificationbot` |
+
+
