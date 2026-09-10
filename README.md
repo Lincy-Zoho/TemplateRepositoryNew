@@ -65,7 +65,7 @@ Look for the value labeled **Unique Name** in the channel details panel. This is
 
 `Example Unique Name: githubreponotification`
 
-So the endpoint becomes:
+**So the endpoint becomes:**
 
 `https://cliq.zoho.com/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx`
 
@@ -75,7 +75,7 @@ The part after `/channelsbyname/` must match the channel's unique name exactly.
 
 This is generated from your Zoho Cliq profile and must be created before you assemble the channel endpoint URL.
 
-Follow these steps:
+**Follow these steps:**
 
 1. Click on your **profile picture** located in the top-right corner of the screen.
 2. Select **Bots & Tools** from the dropdown menu.
@@ -86,7 +86,7 @@ Follow these steps:
 
 After the token is created, copy the generated webhook token and combine it with the region base and channel unique name to build the final endpoint.
 
-Assembled example:
+**Assembled example:**
 
 `https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx`
 
@@ -94,7 +94,7 @@ This complete string, including the `?zapikey=` part, is what you store as the `
 
 
 
-## Check Once
+### Check Once
 
 | Variable Type | Name | Allowed Value |
 | --- | --- | --- |
@@ -113,7 +113,7 @@ This complete string, including the `?zapikey=` part, is what you store as the `
 5. Copy the token and save it as the `PROJECT_TOKEN` environment secret.
 
 
-##Check Once
+### Check Once
 
 | Variable Type | Name | Allowed Value |
 | --- | --- | --- |
@@ -121,3 +121,20 @@ This complete string, including the `?zapikey=` part, is what you store as the `
 
 
 > Treat this value as a credential. Anyone who has it can able to access your project.
+
+
+### 3.3 AI_REVIEW_TOKEN for PR AI Review Gate
+
+This token is required only when `AI_REVIEW_ENABLED=true`. It allows the workflow to send the pull request diff to the selected AI provider so the review can be generated and reported back as a GitHub status check.
+
+In simple terms, the workflow uses this token to authenticate the AI API request. Without it, the action cannot fetch the model output, cannot create the review result, and cannot post the status or PR comment.
+
+#### 3.3.a Get the API token
+
+| Service | Token generation URL |
+| --- | --- |
+| openai | https://platform.openai.com/api-keys |
+| claude | https://console.anthropic.com/settings/keys |
+| gemini | https://aistudio.google.com/app/apikey |
+
+> Treat this value as a credential. Anyone who has it can able to access your AI service.
