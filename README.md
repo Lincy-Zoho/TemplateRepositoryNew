@@ -340,3 +340,71 @@ Notes:
 - Protecting all branches does not by itself make AI review block anything. The check only blocks merges where it is listed as a required status check.
 - Recommended approach: protect only the release branches (`main`, `master`, or `release`) and keep AI review as PR-level validation elsewhere.
 - In practice, add the pre-live branches that should gate deployments before code moves forward, such as `main`, `master`, and `release`, to the branch protection rule so the workflow runs and enforces the check before merge.
+
+
+
+## Conclusion
+
+This workflow is ready to use once the required secrets and repository variables are configured, the workflow is created from the GitHub Actions UI, and the branch protection rule is enabled for the AI review check. After that, your repository can automatically send notifications to Cliq, keep PR updates in a single thread when enabled, and enforce AI-based review checks before merge when configured.
+
+<!-- ## 7. Troubleshooting
+
+| Symptom | Likely cause |
+| --- | --- |
+| Workflow succeeds, nothing in Cliq | Job missing `environment: cliq-production`, so `ENDPOINT` is empty |
+| Message never appears, no error | Wrong region base domain (2.1) |
+| Nothing posted in bot mode | Bot not added to the channel (2.4, step 3) |
+| Workflow fails immediately in bot mode | `CLIQ_BOT_UNIQUE_NAME` not set |
+| Every PR event is a new message instead of a thread reply | Project field write failing — check PAT type and scopes, that the field is a Text field, and that the PR is actually an item in the project |
+| PR stuck on *Waiting for status to be reported* | Required check name does not match `ai-review-check-name` |
+| Cannot find the check to require | Workflow has not run yet (section 6) |
+| AI review returns `401` or shows a failed review comment | Token, endpoint, and model from different providers, or invalid model/service/token configuration; the action also posts the error in the PR comment for diagnosis |
+| `${{ vars.* }}` resolves empty | Value created as a secret, or under the environment instead of Actions → Variables |
+
+### Quick checks
+
+1. Confirm the workflow job declares the correct environment.
+2. Confirm the `ENDPOINT` secret is the complete channel URL including the `?zapikey=` value.
+3. Confirm the channel unique name and region base match the actual Cliq channel.
+4. Confirm `CLIQ_NOTIFICATION_MODE` is set correctly to `user` or `bot`.
+5. If bot mode is enabled, confirm the bot is a member of the target channel and `CLIQ_BOT_UNIQUE_NAME` is set exactly.
+6. If thread mode is enabled, confirm the project field is a `Text` field, the PAT is a classic PAT with `repo` and `project` scopes, and the PR is included in the project.
+7. Confirm the check name in the branch protection rule matches the value used in `ai-review-check-name` exactly.
+8. Confirm the AI provider values all come from the same service and the token matches the provider configuration.
+
+> Important: there are two enforcement layers. The Java action exits early when `AI_REVIEW_ENABLED=false`, but the workflow template also contains a safeguard step that creates a failed `AI Review Gate` check if the status is missing after a PR event. If AI review is disabled, this safeguard must also be skipped or the branch protection rule must not require the check.
+
+### Final setup checklist
+
+Use this checklist before creating the workflow and again before enabling branch protection:
+
+- [ ] Cliq channel exists and the endpoint URL is valid.
+- [ ] `ENDPOINT` is saved as an environment secret under `cliq-production`.
+- [ ] `CLIQ_NOTIFICATION_MODE` is set to `user` or `bot`.
+- [ ] If bot mode is used, the bot is added to the channel and `CLIQ_BOT_UNIQUE_NAME` is correct.
+- [ ] If thread mode is enabled, the project exists, the PR is included in the project, and the thread ID field is a `Text` field.
+- [ ] `PROJECT_TOKEN` is a classic PAT with `repo` and `project` scope.
+- [ ] Repository variables are created under **Settings → Secrets and variables → Actions → Variables**.
+- [ ] `AI_REVIEW_ENABLED`, `AI_REVIEW_SERVICE`, and `AI_REVIEW_MODEL` are set correctly.
+- [ ] `AI_REVIEW_TOKEN` matches the selected provider and model.
+- [ ] The workflow file is committed and the first run succeeds.
+- [ ] Branch protection is configured for the required pre-live branches like `main`, `master`, and `release`.
+- [ ] The required check name matches `ai-review-check-name` exactly.
+
+### Example branch filters
+
+If you want the workflow to run only on the main release paths, use:
+
+```yaml
+on:
+  pull_request:
+    branches: [main, master, release]
+  push:
+    branches: [main, master, release]
+```
+
+This helps ensure the workflow only runs where your deployment and merge rules are enforced.
+
+---
+
+ -->
