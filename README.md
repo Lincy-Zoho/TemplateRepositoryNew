@@ -179,6 +179,7 @@ Use this setting in the GitHub repository variables:
 | Variable Type | Variable Name | Allowed Values |
 | --- | --- | --- |
 | Repository Variables | `CLIQ_NOTIFICATION_MODE` | `user` or `bot` |
+| Repository Variables | `CLIQ_USER_MODE_BOT_DISPLAY_NAME` | Optional string override for user mode | 
 
 
 Use user mode when you want the fastest setup and do not mind the message appearing to come from the webhook creator. Use bot mode when you want a stable, shared sender for ongoing notifications, especially if the person creating the webhook leaves the team or the channel.
@@ -189,7 +190,26 @@ Both modes still use the same `ENDPOINT` secret. The only extra value needed in 
 
 In user mode, there is no extra configuration beyond the channel endpoint itself.
 
-The Cliq channel message is posted as the authenticated user, and the bot name or thumbnail is already configured in the workflow YAML, so no additional setup is required here.
+The Cliq channel message is posted as the authenticated user, and the default display name and image are used unless you override them with repository variables.
+
+Optional overrides for user mode:
+
+| Variable Type | Variable Name | Allowed Values | Notes |
+| --- | --- | --- | --- |
+| Repository Variables | `CLIQ_USER_MODE_BOT_DISPLAY_NAME` | Any string | Optional override for the display name in user mode |
+| Repository Variables | `CLIQ_USER_MODE_BOT_IMAGE_URL` | Valid image URL | Optional override for the thumbnail in user mode |
+
+Fallback order in user mode:
+
+1. If both values are provided, use the user-provided display name and image URL.
+2. If only the display name is provided, use it and fall back to the default image URL.
+3. If only the image URL is provided, use the default display name and the provided image URL.
+4. If both are omitted, use the default display name and default image URL.
+
+Default user-mode values:
+
+- Display name: `GitHub Informer for Zoho Cliq`
+- Image URL: the built-in default WorkDrive image URL used by the workflow
 
 ### 4.3 If posting as a bot — getting the bot unique name
 
@@ -300,6 +320,8 @@ This is the intended "feature off" mode. If you want to disable AI review comple
 | --- | --- | --- |
 | `CLIQ_NOTIFICATION_MODE` | Yes | `user` or `bot` |
 | `CLIQ_BOT_UNIQUE_NAME` | Only if mode is `bot` | `githubnotificationbot`. Lower-case, no spaces. |
+| `CLIQ_USER_MODE_BOT_DISPLAY_NAME` | Optional in user mode | Any string, for example `GitHub Updates` |
+| `CLIQ_USER_MODE_BOT_IMAGE_URL` | Optional in user mode | Valid image URL |
 | `CLIQ_THREAD_STORAGE_MODE` | Yes | `project` for per-PR threads |
 | `PROJECT_NUMBER` | Only if thread mode is `project` | Integer value from the project URL, for example `7`. |
 | `PROJECT_THREAD_FIELD_ID` | Only if thread mode is `project` | Numeric field ID from the field settings URL `401236883` |
