@@ -28,14 +28,16 @@ These are the variables we need to set
 
 ## GitHub → Settings → Environments → `cliq-production` → Secrets
 
-| Variable Type | Variable Name | Allowed Values | Link |
+## Environment secrets 
+
+| Secret name | Required | Allowed value | Link |
 | --- | --- | --- | --- |
-| Repository Variables | `CLIQ_THREAD_STORAGE_MODE` | `project` | 
-| Repository Variables | `PROJECT_NUMBER` | `1` |
-| Repository Variables | `PROJECT_THREAD_FIELD_ID` | `401236883` |
+| `ENDPOINT` | Yes | `https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx` |
+| `PROJECT_TOKEN` | Only if `CLIQ_THREAD_STORAGE_MODE=project` | `XXX_S7Up0fXXXXXXXX` |
+| `AI_REVIEW_TOKEN` | Only if `AI_REVIEW_ENABLED=true` | Provider API key for the selected AI service. |
 
 
-## Environment variables check
+## Environment variables 
 
 | Variable name | Required | Allowed values | Link |
 | --- | --- | --- | --- |
