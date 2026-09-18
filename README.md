@@ -174,17 +174,6 @@ The workflow uses this token to authenticate the AI API request. Without it, the
 > Treat this value as a credential. Anyone who has it can access your AI service.
 
 
-
-## Environment secrets check
-
-| Secret name | Required | Allowed value |
-| --- | --- | --- |
-| `ENDPOINT` | Yes | `https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx` |
-| `PROJECT_TOKEN` | Only if `CLIQ_THREAD_STORAGE_MODE=project` | `XXX_S7Up0fXXXXXXXX` |
-| `AI_REVIEW_TOKEN` | Only if `AI_REVIEW_ENABLED=true` | Provider API key for the selected AI service. |
-
-
-
 ## 4. How to configure environment variables
 
 ### **Where these go:** repository **Settings → Secrets and variables → Actions → Variables**.
@@ -340,22 +329,6 @@ This is the intended "feature off" mode. If you want to disable AI review comple
 | Repository Variables | `AI_REVIEW_ENABLED` | `true / false` |
 | Repository Variables | `AI_REVIEW_SERVICE` | `openai / claude / gemini` |
 | Repository Variables | `AI_REVIEW_MODEL` | `gpt-4.1-mini / claude-sonnet-5 / gemini-2.5-flash` |
-
-
-## Environment variables check
-
-| Variable name | Required | Allowed values |
-| --- | --- | --- |
-| `CLIQ_NOTIFICATION_MODE` | Yes | `user` or `bot` |
-| `CLIQ_BOT_UNIQUE_NAME` | Only if mode is `bot` | `githubnotificationbot`. Lower-case, no spaces. |
-| `CLIQ_USER_MODE_BOT_DISPLAY_NAME` | Optional in user mode | Any string, for example `GitHub Updates` |
-| `CLIQ_USER_MODE_BOT_IMAGE_URL` | Optional in user mode | Valid image URL |
-| `CLIQ_THREAD_STORAGE_MODE` | Yes | `project` for per-PR threads |
-| `PROJECT_NUMBER` | Only if thread mode is `project` | Integer value from the project URL, for example `7`. |
-| `PROJECT_THREAD_FIELD_ID` | Only if thread mode is `project` | Numeric field ID from the field settings URL `401236883` |
-| `AI_REVIEW_ENABLED` | Yes | `true` or `false` |
-| `AI_REVIEW_SERVICE` | Yes | `openai`, `claude`, or `gemini` |
-| `AI_REVIEW_MODEL` | Yes | A model ID that belongs to the chosen service. See the table in section 4.5.a |
 
 
 ## 5. Create the workflow file
