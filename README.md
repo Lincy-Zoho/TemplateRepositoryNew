@@ -42,9 +42,9 @@ These are the variables we need to set
 | Link | Variable name | Required | Allowed values | 
 | --- | --- | --- | --- |
 | [4.1](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#41-decide-post-as-a-user-or-as-a-bot) |`CLIQ_NOTIFICATION_MODE` | Yes | `user` or `bot` |
-| [4.3](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#43-if-posting-as-a-bot--getting-the-bot-unique-name) |`CLIQ_BOT_UNIQUE_NAME` | Only if mode is `bot` | `githubnotificationbot`. Lower-case, no spaces. |
 | [4.2](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#42-if-posting-as-a-user) | `CLIQ_USER_MODE_BOT_DISPLAY_NAME` | Optional in user mode | Any string, for example `GitHub Updates` |
 | [4.2](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#42-if-posting-as-a-user) | `CLIQ_USER_MODE_BOT_IMAGE_URL` | Optional in user mode | Valid image URL |
+| [4.3](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#43-if-posting-as-a-bot--getting-the-bot-unique-name) |`CLIQ_BOT_UNIQUE_NAME` | Only if mode is `bot` | `githubnotificationbot`. Lower-case, no spaces. |
 | [4.4](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#44-if-posting-pr-updates-into-a-thread) |`CLIQ_THREAD_STORAGE_MODE` | Yes | `project` for per-PR threads |
 | [4.4.a](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#44a-steps-to-create-the-project-and-custom-field) |`PROJECT_NUMBER` | Only if thread mode is `project` | Integer value from the project URL, for example `7`. |
 | [4.4.a](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#44a-steps-to-create-the-project-and-custom-field) |`PROJECT_THREAD_FIELD_ID` | Only if thread mode is `project` | Numeric field ID from the field settings URL `401236883` |
