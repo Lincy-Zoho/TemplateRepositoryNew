@@ -50,7 +50,7 @@ These are the variables we need to set
 | [4.4.a](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#44a-steps-to-create-the-project-and-custom-field) |`PROJECT_THREAD_FIELD_ID` | Only if thread mode is `project` | Numeric field ID from the field settings URL `401236883` |
 | [4.5](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#45-ai-provider-settings) |`AI_REVIEW_ENABLED` | Yes | `true` or `false` |
 | [4.5](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#45-ai-provider-settings) |`AI_REVIEW_SERVICE` | Yes | `openai`, `claude`, or `gemini` |
-| [4.5](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#45-ai-provider-settings) |`AI_REVIEW_MODEL` | Yes | A model ID that belongs to the chosen service. See the table in section 4.5.a |
+| [4.5](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#45-ai-provider-settings) |`AI_REVIEW_MODEL` | Yes | A model ID that belongs to the chosen service. See the table in section [4.5.a](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#45a-if-ai_review_enabledtrue) |
 
 
 ## 3. How to configure environment secrets
