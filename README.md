@@ -30,27 +30,27 @@ These are the variables we need to set
 
 ## Environment secrets 
 
-| Secret name | Required | Allowed value | Link |
+| Link | Secret name | Required | Allowed value | 
 | --- | --- | --- | --- |
-| `ENDPOINT` | Yes | `https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx` | [3.1](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#31-endpoint---the-channel-endpoint-url) |
-| `PROJECT_TOKEN` | Only if `CLIQ_THREAD_STORAGE_MODE=project` | `XXX_S7Up0fXXXXXXXX` |
-| `AI_REVIEW_TOKEN` | Only if `AI_REVIEW_ENABLED=true` | Provider API key for the selected AI service. |
+| [3.1](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#31-endpoint---the-channel-endpoint-url) | `ENDPOINT` | Yes | `https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx` |
+| [3.2](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#32-creating-the-classic-pat-for-project_token) | `PROJECT_TOKEN` | Only if `CLIQ_THREAD_STORAGE_MODE=project` | `XXX_S7Up0fXXXXXXXX` | 
+| [3.3](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#33-ai_review_token-for-pr-ai-review-gate) | `AI_REVIEW_TOKEN` | Only if `AI_REVIEW_ENABLED=true` | Provider API key for the selected AI service. | 
 
 
 ## Environment variables 
 
-| Variable name | Required | Allowed values | Link |
+| Link | Variable name | Required | Allowed values | 
 | --- | --- | --- | --- |
-| `CLIQ_NOTIFICATION_MODE` | Yes | `user` or `bot` |
-| `CLIQ_BOT_UNIQUE_NAME` | Only if mode is `bot` | `githubnotificationbot`. Lower-case, no spaces. |
-| `CLIQ_USER_MODE_BOT_DISPLAY_NAME` | Optional in user mode | Any string, for example `GitHub Updates` |
-| `CLIQ_USER_MODE_BOT_IMAGE_URL` | Optional in user mode | Valid image URL |
-| `CLIQ_THREAD_STORAGE_MODE` | Yes | `project` for per-PR threads |
-| `PROJECT_NUMBER` | Only if thread mode is `project` | Integer value from the project URL, for example `7`. |
-| `PROJECT_THREAD_FIELD_ID` | Only if thread mode is `project` | Numeric field ID from the field settings URL `401236883` |
-| `AI_REVIEW_ENABLED` | Yes | `true` or `false` |
-| `AI_REVIEW_SERVICE` | Yes | `openai`, `claude`, or `gemini` |
-| `AI_REVIEW_MODEL` | Yes | A model ID that belongs to the chosen service. See the table in section 4.5.a |
+| [4.1](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#41-decide-post-as-a-user-or-as-a-bot) |`CLIQ_NOTIFICATION_MODE` | Yes | `user` or `bot` |
+| [4.3](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#43-if-posting-as-a-bot--getting-the-bot-unique-name) |`CLIQ_BOT_UNIQUE_NAME` | Only if mode is `bot` | `githubnotificationbot`. Lower-case, no spaces. |
+| [4.2](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#42-if-posting-as-a-user) | `CLIQ_USER_MODE_BOT_DISPLAY_NAME` | Optional in user mode | Any string, for example `GitHub Updates` |
+| [4.2](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#42-if-posting-as-a-user) | `CLIQ_USER_MODE_BOT_IMAGE_URL` | Optional in user mode | Valid image URL |
+| [4.4](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#44-if-posting-pr-updates-into-a-thread) |`CLIQ_THREAD_STORAGE_MODE` | Yes | `project` for per-PR threads |
+| [4.4.a](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#44a-steps-to-create-the-project-and-custom-field) |`PROJECT_NUMBER` | Only if thread mode is `project` | Integer value from the project URL, for example `7`. |
+| [4.4.a](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#44a-steps-to-create-the-project-and-custom-field) |`PROJECT_THREAD_FIELD_ID` | Only if thread mode is `project` | Numeric field ID from the field settings URL `401236883` |
+| [4.5](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#45-ai-provider-settings) |`AI_REVIEW_ENABLED` | Yes | `true` or `false` |
+| [4.5](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#45-ai-provider-settings) |`AI_REVIEW_SERVICE` | Yes | `openai`, `claude`, or `gemini` |
+| [4.5](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#45-ai-provider-settings) |`AI_REVIEW_MODEL` | Yes | A model ID that belongs to the chosen service. See the table in section 4.5.a |
 
 
 ## 3. How to configure environment secrets
@@ -321,7 +321,7 @@ When this variable is set to `true`, the workflow triggers the AI review check f
 
 > Current Claude model IDs are dateless, such as `claude-opus-5`, `claude-sonnet-5`, and `claude-haiku-4-5`. Legacy aliases like `claude-3-5-sonnet-latest` should not be used for new setups.
 
-### 4.5.b If `AI_REVIEW_ENABLED=false`
+#### 4.5.b If `AI_REVIEW_ENABLED=false`
 
 When this variable is set to `false`, the workflow exits the AI review path before any diff fetch, AI API call, GitHub check creation, or PR comment is attempted. In practice, this means:
 
