@@ -24,6 +24,32 @@ To configure this workflow correctly, follow these three steps in order:
 **Step 2:** Create the workflow and run it
 **Step 3:** Set branch rules and required status checks, then validate with a PR
 
+These are the variables we need to set
+
+## GitHub → Settings → Environments → `cliq-production` → Secrets
+
+| Variable Type | Variable Name | Allowed Values | Link |
+| --- | --- | --- | --- |
+| Repository Variables | `CLIQ_THREAD_STORAGE_MODE` | `project` | 
+| Repository Variables | `PROJECT_NUMBER` | `1` |
+| Repository Variables | `PROJECT_THREAD_FIELD_ID` | `401236883` |
+
+
+## Environment variables check
+
+| Variable name | Required | Allowed values | Link |
+| --- | --- | --- | --- |
+| `CLIQ_NOTIFICATION_MODE` | Yes | `user` or `bot` |
+| `CLIQ_BOT_UNIQUE_NAME` | Only if mode is `bot` | `githubnotificationbot`. Lower-case, no spaces. |
+| `CLIQ_USER_MODE_BOT_DISPLAY_NAME` | Optional in user mode | Any string, for example `GitHub Updates` |
+| `CLIQ_USER_MODE_BOT_IMAGE_URL` | Optional in user mode | Valid image URL |
+| `CLIQ_THREAD_STORAGE_MODE` | Yes | `project` for per-PR threads |
+| `PROJECT_NUMBER` | Only if thread mode is `project` | Integer value from the project URL, for example `7`. |
+| `PROJECT_THREAD_FIELD_ID` | Only if thread mode is `project` | Numeric field ID from the field settings URL `401236883` |
+| `AI_REVIEW_ENABLED` | Yes | `true` or `false` |
+| `AI_REVIEW_SERVICE` | Yes | `openai`, `claude`, or `gemini` |
+| `AI_REVIEW_MODEL` | Yes | A model ID that belongs to the chosen service. See the table in section 4.5.a |
+
 
 ## 3. How to configure environment secrets
 
