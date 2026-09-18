@@ -21,9 +21,7 @@ The threading and AI review features are optional and independent. You can use n
 To configure this workflow correctly, follow these three steps in order:
 
 **Step 1:** Set the environment secrets and repository variables
-
 **Step 2:** Create the workflow and run it
-
 **Step 3:** Set branch rules and required status checks, then validate with a PR
 
 These are the variables we need to set
