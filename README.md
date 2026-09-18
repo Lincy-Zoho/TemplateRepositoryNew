@@ -20,9 +20,9 @@ The threading and AI review features are optional and independent. You can use n
 
 To configure this workflow correctly, follow these three steps in order:
 
-**Step 1:** Set the environment secrets and repository variables
-**Step 2:** Create the workflow and run it
-**Step 3:** Set branch rules and required status checks, then validate with a PR
+**Step 1:** Set the environment secrets and repository variables 
+**Step 2:** Create the workflow and run it 
+**Step 3:** Set branch rules and required status checks, then validate with a PR 
 
 These are the variables we need to set
 
@@ -36,6 +36,7 @@ These are the variables we need to set
 | [3.2](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#32-creating-the-classic-pat-for-project_token) | `PROJECT_TOKEN` | Only if `CLIQ_THREAD_STORAGE_MODE=project` | `XXX_S7Up0fXXXXXXXX` | 
 | [3.3](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#33-ai_review_token-for-pr-ai-review-gate) | `AI_REVIEW_TOKEN` | Only if `AI_REVIEW_ENABLED=true` | Provider API key for the selected AI service. | 
 
+## Repository Settings → Secrets and variables → Actions → Variables.
 
 ## Environment variables 
 
@@ -176,7 +177,7 @@ The workflow uses this token to authenticate the AI API request. Without it, the
 
 ## 4. How to configure environment variables
 
-### **Where these go:** repository **Settings → Secrets and variables → Actions → Variables**.
+### **Where these go:** Repository **Settings → Secrets and variables → Actions → Variables**.
 
 These are repository variables, not environment secrets, and they are not environment-scoped.
 
