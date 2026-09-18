@@ -32,7 +32,7 @@ These are the variables we need to set
 
 | Secret name | Required | Allowed value | Link |
 | --- | --- | --- | --- |
-| `ENDPOINT` | Yes | `https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx` |
+| `ENDPOINT` | Yes | `https://cliq.zoho.in/api/v2/channelsbyname/githubreponotification/message?zapikey=1001.xxxxxxxx` | [3.1](https://github.com/Lincy-Zoho/TemplateRepositoryNew/blob/main/README.md#31-endpoint---the-channel-endpoint-url) |
 | `PROJECT_TOKEN` | Only if `CLIQ_THREAD_STORAGE_MODE=project` | `XXX_S7Up0fXXXXXXXX` |
 | `AI_REVIEW_TOKEN` | Only if `AI_REVIEW_ENABLED=true` | Provider API key for the selected AI service. |
 
