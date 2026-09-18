@@ -20,9 +20,9 @@ The threading and AI review features are optional and independent. You can use n
 
 To configure this workflow correctly, follow these three steps in order:
 
-**Step 1:** Set the environment secrets and repository variables 
-**Step 2:** Create the workflow and run it 
-**Step 3:** Set branch rules and required status checks, then validate with a PR 
+**Step 1:** Set the environment secrets and repository variables
+**Step 2:** Create the workflow and run it
+**Step 3:** Set branch rules and required status checks, then validate with a PR
 
 These are the variables we need to set
 
@@ -356,7 +356,7 @@ Order matters here. GitHub cannot require a status check that has never been rep
 2. Check the **Actions** tab for the run result and confirm the message arrived in the expected Cliq channel.
 3. Only after that, go to **Settings → Rules** (or **Branches → branch protection rule**).
 4. Enable **Require status checks to pass**.
-5. Add the check name exactly as set in `ai-review-check-name` — default is `AI Review Gate`.
+5. Add the check name exactly as set in `ai-review-check-name` — default is **`AI Review Gate`**.
 
 Notes:
 
