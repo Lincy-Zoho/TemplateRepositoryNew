@@ -16,7 +16,7 @@ The threading and AI review features are optional and independent. You can use n
 
 ---
 
-## 2. Configuration flow
+## 2. Configuration flow 
 
 To configure this workflow correctly, follow these three steps in order:
 
