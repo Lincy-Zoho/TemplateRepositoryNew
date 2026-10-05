@@ -461,7 +461,7 @@ jobs:
           echo "PR inserted into project table successfully."
 
       - if: ${{ github.event_name != 'pull_request' && github.event_name != 'pull_request_target' }}
-        uses: Lincy-Zoho/GitHub-Informer-New@v6.5
+        uses: Lincy-Zoho/GitHub-Informer-New@v6.5.1
         env:
           # Use workflow token for repo/PR APIs; use PROJECT_TOKEN only for ProjectV2 operations.
           GITHUB_TOKEN: ${{ github.token }}
@@ -650,7 +650,7 @@ jobs:
           echo "token_present=${{ secrets.GITHUB_TOKEN != '' }}"
 
       - if: ${{ github.event_name == 'pull_request_target' && steps.fork-guard.outputs.skip_write != 'true' }}
-        uses: Lincy-Zoho/GitHub-Informer-New@v6.5
+        uses: Lincy-Zoho/GitHub-Informer-New@v6.5.1
         env:
           # Use workflow token for repo/PR APIs; use PROJECT_TOKEN only for ProjectV2 operations.
           GITHUB_TOKEN: ${{ github.token }}
